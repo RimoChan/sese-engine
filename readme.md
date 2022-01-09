@@ -1,12 +1,12 @@
 # 【sese-engine】新时代的搜索引擎！
 
-你是否想象过，在未来世界里，巨型企业控制着搜索引擎，它说谎成性，不仅偷取你的隐私，还使用虚假信息来操纵你的生活！
+你是否想象过，在未来世界里，巨型企业控制着搜索引擎，它说谎成性，不仅偷取你的隐私，还使用虚假信息来操纵你的生活？
 
 但好在这一切都可以逆转！
 
 我们发明了强大并且安全的sese搜索引擎！有了它，你就可以在本地直接搜索互联网上的信息，再也不用担心这些问题啦！
 
-<img align='right' src='https://upyun.yunyoujun.cn/images/sese-banner-draft.png' width='250px'>
+<img align='right' src='https://upyun.yunyoujun.cn/images/sese-banner-draft.png' width='320px'>
 
 ## 测试环境
 
