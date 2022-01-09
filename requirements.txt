@@ -1,0 +1,14 @@
+requests==2.26.0
+reppy==0.4.14
+lxml==4.6.2
+pyyaml==5.2
+tldextract==3.1.2
+flask==2.0.2
+gevent==21.1.2
+jieba==0.42.1
+tqdm==4.41.1
+waitress==2.0.0
+guppy3==3.1.2
+brotli==1.0.9
+urllib3==1.22
+rimo-storage==1.2.0

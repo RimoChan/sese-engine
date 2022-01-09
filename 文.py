@@ -1,0 +1,67 @@
+import re
+import posixpath
+from urllib.parse import urlparse
+from typing import Tuple, List
+
+import lxml.html
+
+from 虫 import 爬
+
+import tldextract
+
+
+def 缩(url):
+    t = tldextract.extract(url)
+    return f'{t.domain}.{t.suffix}'
+
+
+def 摘要(url: str, **d) -> Tuple[str, str, str, List[str]]:
+    raw = 爬(url, **d)
+    if not raw:
+        return '', '', '', []
+    q = urlparse(url)
+    基 = f'{q.scheme}://{q.netloc}'
+
+    root = lxml.html.document_fromstring(raw)
+
+    text = []
+    href = []
+    title = ''
+    description = ''
+    def dfs(r):
+        nonlocal title, description
+        if r.tag in ('script', 'style'):
+            return
+        if r.tag == 'meta' and r.attrib.get('name', '').lower() == 'description':
+            description = r.attrib.get('content', '')
+        if r.tag == 'a':
+            s = r.attrib.get('href')
+            if s:
+                s = s.split('#')[0]
+                if s:
+                    qs = urlparse(s)
+                    if qs.scheme not in ('', 'http', 'https'):
+                        return
+                    if qs.scheme == '':
+                        s = 基 + posixpath.normpath(posixpath.join(q.path, '..', qs.path))
+                    try:
+                        urlparse(s)
+                    except Exception:
+                        None
+                    else:
+                        href.append(s)
+        s = r.text
+        if s:
+            if not isinstance(r.tag, str):
+                return
+            s = re.sub('\s+', ' ', s)
+            s = s.strip()
+            if s:
+                if r.tag == 'title':
+                    title = s
+                else:
+                    text.append(s)
+        for x in r:
+            dfs(x)
+    dfs(root)
+    return title, description, ' '.join(text), href
