@@ -4,7 +4,7 @@
 
 但好在这一切都可以逆转！
 
-我们发明了强大并且安全的sese搜索引擎！有了它，你就可以在本地直接搜索互联网上的信息，再也不用担心这些问题啦！
+我们发明了强大并且安全的sese搜索引擎。有了它，你就可以在本地直接搜索互联网上的信息，再也不用担心这些问题啦！
 
 <img align='right' src='https://upyun.yunyoujun.cn/images/sese-banner-draft.png' width='320px'>
 
