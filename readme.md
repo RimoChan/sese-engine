@@ -4,7 +4,7 @@
 
 但好在这一切都可以逆转！
 
-我们发明了强大并且安全的sese搜索引擎。有了它，你就可以在本地直接搜索互联网上的信息，再也不用担心这些问题啦！
+我们发明了强大并且安全的sese搜索引擎。它是一个轻量级的搜索引擎，可以轻松地部署在个人电脑上，有了它，你就可以在本地直接搜索互联网上的信息，再也不用担心这些问题啦！
 
 <img align='right' src='https://upyun.yunyoujun.cn/images/sese-banner-draft.png' width='320px'>
 
@@ -19,7 +19,9 @@
 
 ## 安装
 
-只需要Python。数据库什么的都不用装，配环境非常方便，好耶！
+只需要Python。
+
+数据库什么的都不用装，配环境非常方便，好耶！
 
 ```sh
 pip install -r requirements.txt
