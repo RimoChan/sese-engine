@@ -154,8 +154,4 @@ def bfs(start, epoch=999999):
 
 
 while True:
-    try:
-        bfs('https://librian.net')
-    except Exception as e:
-        logging.exception(e)
-        raise
+    bfs('https://librian.net')
