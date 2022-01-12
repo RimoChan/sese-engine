@@ -78,7 +78,7 @@ def 大清洗():
         for k, v in tqdm(锁定df.items(), ncols=70):
             原v = df.get(k, [])
             if not 原v:
-                if len(v) == 1:
+                if len(v) < 3:
                     丢key数 += 1
                     continue
                 新key数 += 1
