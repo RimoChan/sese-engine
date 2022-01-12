@@ -35,7 +35,6 @@ def _繁荣表():
     总 = sum(d.values())
     d = {k: v/总*300000 for k, v in d.items()}
     d = {k: v for k, v in d.items() if v > 0.2}
-    print(len(d))
     return d
 
 
@@ -108,7 +107,7 @@ def 初步查询(keys: list, sli: slice):
         p = 1
         for key in keys:
             p *= vs.get(key, 默认值[key])
-        d[url] = p*math.log10(10+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
+        d[url] = p*math.log(math.e+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
     q = sorted([(v, k) for k, v in d.items()], reverse=True)
     qq = [*islice(小小清洗(q, 1), sli.start, sli.stop, sli.step)]
     return qq, 记录, len(d)
@@ -182,7 +181,7 @@ def _缓存摘要(url: str) -> Tuple[str, str, str]:
         r = 文.摘要(url, 乖=False, timeout=60)
         print(f'慢慢获取「{url}」成功了！')
         return r[:3]
-    return 文.摘要(url, 乖=False, timeout=在线摘要限时)[:3]
+    return 文.摘要(url, 乖=False, timeout=在线摘要限时, 大小限制=10000)[:3]
 
 
 def 缓存摘要(url: str):

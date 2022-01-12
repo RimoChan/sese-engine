@@ -17,7 +17,7 @@ def 萝卜(url):
     return rp
 
 
-def 真爬(url, 乖=True, timeout=5) -> str:
+def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> str:
     q = urlparse(url)
     if 乖:
         rp = 萝卜(f'{q.scheme}://{q.netloc}')
@@ -29,10 +29,14 @@ def 真爬(url, 乖=True, timeout=5) -> str:
     resp.raise_for_status()
     if 'text/html' not in resp.headers.get('Content-Type', ''):
         raise LoliError(f'类型{resp.headers.get("Content-Type")}不行！')
-    if resp.encoding == 'ISO-8859-1':
-        return resp.content.decode('utf8', 'ignore')  # 猜测编码的性能太差，直接硬上
+    if 大小限制:
+        data = next(resp.iter_content(大小限制))
     else:
-        return resp.content.decode(resp.encoding, 'ignore')
+        data = resp.content
+    if resp.encoding == 'ISO-8859-1':
+        return data.decode('utf8', 'ignore')  # 猜测编码的性能太差，直接硬上
+    else:
+        return data.decode(resp.encoding, 'ignore')
 
 
 def 爬(url, **d) -> Optional[str]:
