@@ -10,7 +10,7 @@
 
 ## 测试环境
 
-一起来玩吧: http://sese.yyj.moe
+一起来玩吧: http://sese.yyj.moe (之前的数据有些不完整，我先回扫一遍，这两天访问可能会比较慢)
 
 前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)
 
