@@ -6,6 +6,8 @@ from typing import Optional
 from reppy.robots import Robots
 import requests
 
+from 配置 import 爬虫的名字
+
 
 class LoliError(Exception):
     ...
@@ -21,9 +23,9 @@ def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> str:
     q = urlparse(url)
     if 乖:
         rp = 萝卜(f'{q.scheme}://{q.netloc}')
-        if not rp.allowed(url, "loli_tentacle"):
+        if not rp.allowed(url, 爬虫的名字):
             raise LoliError('被禁了，不行！')
-    resp = requests.get(url, timeout=timeout, headers={'user-agent': 'loli_tentacle'}, stream=True)
+    resp = requests.get(url, timeout=timeout, headers={'user-agent': 爬虫的名字}, stream=True)
     if resp.status_code == 404:
         raise LoliError('没有！没有！')
     resp.raise_for_status()

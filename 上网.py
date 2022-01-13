@@ -13,8 +13,8 @@ from tqdm import tqdm
 
 import 分析
 from 文 import 缩, 摘要
-import 配置
 from 存储 import 融合之门
+from 配置 import 爬取线程数, 单网页最多关键词
 
 门 = 融合之门('./savedata/门')
 
@@ -50,6 +50,7 @@ def 摘(url):
     门[url] = title, description[:256]
     l = 分析.龙(title, description, text)
     if l:
+        l = sorted(l, key=lambda x:x[1], reverse=True)[:单网页最多关键词]
         data = [url, l]
         requests.post('http://127.0.0.1:5000/l', data=json.dumps(data)).raise_for_status()
     return r
@@ -124,7 +125,7 @@ def 重整(url_list):
 
 def bfs(start, epoch=999999):
     吸过 = set()
-    pool = ThreadPoolExecutor(max_workers=配置.爬取线程数)
+    pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
     for _ in range(epoch):
         新q = []

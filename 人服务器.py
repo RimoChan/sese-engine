@@ -18,7 +18,7 @@ from utils import netloc, 小小清洗, 切
 import 文
 from 存储 import 索引空间, 融合之门
 from 分析 import 分
-from 配置 import 在线摘要限时
+from 配置 import 使用在线摘要, 在线摘要限时
 
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -185,6 +185,8 @@ def _缓存摘要(url: str) -> Tuple[str, str, str]:
 
 
 def 缓存摘要(url: str):
+    if not 使用在线摘要:
+        return None
     try:
         return _缓存摘要(url)
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
