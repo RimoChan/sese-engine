@@ -12,11 +12,13 @@ import requests
 from tqdm import tqdm
 
 import 分析
+import 信息
 from 文 import 缩, 摘要
 from 存储 import 融合之门
-from 配置 import 爬取线程数, 单网页最多关键词
+from 配置 import 爬取线程数, 单网页最多关键词, 入口
 
 门 = 融合之门('./savedata/门')
+繁荣表 = 信息.繁荣表()
 
 a = tqdm()
 
@@ -58,10 +60,16 @@ def 摘(url):
 
 def 求质量(url):
     title, description, text, href = 摘(url)
+    s = 1
+    if not title:
+        s *= 0.2
     if not description:
-        return 0.5
-    else:
-        return 1
+        s *= 0.6
+    if not url.startswith('https'):
+        s *= 0.8
+    if 'm' in url.split('.'):
+        s *= 0.8
+    return s
 
 
 def 超吸(url):
@@ -73,19 +81,19 @@ def 超吸(url):
         超b = 缩(url)
         k = max([中文率(text), 中文率(title)], key=lambda x: -1 if x is None else x)
 
-        中文度, 兴趣, 质量 = 网站信息.get(b, (0.5, 1, None))
+        中文度, 已访问次数, 质量 = 网站信息.get(b, (0.5, 1, None))
         if k is not None:
             中文度 = 中文度*0.9 + k*0.1
-        兴趣 = 兴趣 * 0.995
+        已访问次数 += 1
         if 质量 is None:
             质量 = 求质量(f'https://{q.netloc}/')
-        网站信息[b] = 中文度, 兴趣, 质量
+        网站信息[b] = 中文度, 已访问次数, 质量
 
-        中文度, 兴趣, 质量 = 网站信息.get(超b, (0.5, 1, None))
+        中文度, 已访问次数, 质量 = 网站信息.get(超b, (0.5, 1, None))
         if 质量 is None:
             质量 = 求质量(f'https://{超b}/')
-        兴趣 = 兴趣 * 0.9995
-        网站信息[超b] = 中文度, 兴趣, 质量
+        已访问次数 += 0.05
+        网站信息[超b] = 中文度, 已访问次数, 质量
 
         return href
     except Exception as e:
@@ -94,14 +102,22 @@ def 超吸(url):
         return []
 
 
+def 计算兴趣(域名, 已访问次数):
+    限制 = 繁荣表.get(域名, 0) * 10000
+    p = max(0, 已访问次数 - 限制)
+    return 0.99 ** p
+
+
 def 喜欢(url) -> float:
     b = urlparse(url).netloc
-    中文度, 兴趣, 质量 = 网站信息.get(b, (0.5, 1, 1))
+    中文度, 已访问次数, 质量 = 网站信息.get(b, (0.5, 1, 1))
     超b = 缩(url)
+    兴趣 = 计算兴趣(b, 已访问次数)
     if 超b == b:
         兴趣2 = 1
     else:
-        _, 兴趣2, __ = 网站信息.get(超b, (0.5, 1, 1))
+        _, 已访问次数2, __ = 网站信息.get(超b, (0.5, 1, 1))
+        兴趣2 = 计算兴趣(超b, 已访问次数2)
     return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2)
 
 
@@ -155,4 +171,4 @@ def bfs(start, epoch=999999):
 
 
 while True:
-    bfs('https://librian.net')
+    bfs(入口)

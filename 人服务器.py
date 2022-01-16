@@ -16,9 +16,10 @@ from rimo_storage import cache
 
 from utils import netloc, 小小清洗, 切
 import 文
+import 信息
 from 存储 import 索引空间, 融合之门
 from 分析 import 分
-from 配置 import 使用在线摘要, 在线摘要限时
+from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url
 
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
@@ -28,17 +29,8 @@ app = flask.Flask(__name__)
 反向索引 = 索引空间('./savedata/键')
 门 = 融合之门('./savedata/门')
 
+繁荣表 = 信息.繁荣表()
 
-def _繁荣表():
-    with open('savedata/繁荣.json', encoding='utf8') as f:
-        d = json.load(f)
-    总 = sum(d.values())
-    d = {k: v/总*300000 for k, v in d.items()}
-    d = {k: v for k, v in d.items() if v > 0.2}
-    return d
-
-
-繁荣表 = _繁荣表()
 
 with open('./data/屏蔽词.json', encoding='utf8') as f:
     屏蔽词 = {*json.load(f)}
@@ -94,10 +86,10 @@ def 初步查询(keys: list, sli: slice):
     默认值 = {}
     for key in keys:
         l = 反向索引.get(key, [])
-        if len(l) < 10000:
-            默认值[key] = 1/10000 * (max(100, len(l)) / 10000)
+        if len(l) < 单键最多url:
+            默认值[key] = 1/10000 * (max(100, len(l)) / 单键最多url)
         else:
-            默认值[key] = max(1/10000, sorted([x[0] for x in l], reverse=True)[:10000][-1] / 2)
+            默认值[key] = max(1/10000, sorted([x[0] for x in l], reverse=True)[:单键最多url][-1] / 2)
         for v, url in l:
             记录.setdefault(url, {})[key] = v
     d = {}
