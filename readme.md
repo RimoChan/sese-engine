@@ -10,8 +10,7 @@
 
 ## 测试环境
 
-一起来玩吧: http://sese.yyj.moe  
-<sub>(之前的数据有些不完整，我先回扫一遍，这两天访问可能会比较慢)</sub>
+一起来玩吧: http://sese.yyj.moe
 
 前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)
 
@@ -20,7 +19,8 @@
 
 ## 安装
 
-只需要Python。
+只需要1个Python3.8。  
+<sub>Python版本太高的话依赖会装不上，但是我也不知道怎么办……</sub>
 
 数据库什么的都不用装，配环境非常方便，好耶！
 
