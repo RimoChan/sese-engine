@@ -6,6 +6,7 @@ import logging
 import threading
 import concurrent.futures
 from itertools import islice
+from urllib.parse import unquote
 from typing import Tuple
 
 import flask
@@ -81,6 +82,16 @@ def _search():
         )
 
 
+def 坏(url):
+    s = max(0, (len(url)-35)/400)
+    if '.htm' in url or '.php' in url:
+        s += 0.3
+    if len(url.rstrip('/').split('/')) > 3:
+        s += 0.2
+    s = min(s, 0.9)
+    return s
+
+
 def 初步查询(keys: list, sli: slice):
     记录 = {}
     默认值 = {}
@@ -95,11 +106,11 @@ def 初步查询(keys: list, sli: slice):
     d = {}
     for url, vs in 记录.items():
         繁荣 = 繁荣表.get(netloc(url), 0)
-        不喜欢 = min(max(0, (len(url)-30)/500), 0.9)
+        不喜欢 = 坏(url)
         p = 1
         for key in keys:
             p *= vs.get(key, 默认值[key])
-        d[url] = p*math.log(math.e+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
+        d[url] = p*math.log2(2+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
     q = sorted([(v, k) for k, v in d.items()], reverse=True)
     qq = [*islice(小小清洗(q, 1), sli.start, sli.stop, sli.step)]
     return qq, 记录, len(d)
@@ -134,7 +145,7 @@ def 查询(keys: list, sli=slice(0, 7)):
                 msg = None
         res.append({
             '分数': {'终': v[0], '相关': v[1], '繁荣': v[2], '不喜欢': v[3]},
-            '网址': url,
+            '网址': unquote(url),
             '信息': msg,
             '相关性': {k: 记录[url].get(k, 0) for k in keys},
         })
