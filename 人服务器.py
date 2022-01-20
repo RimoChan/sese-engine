@@ -1,13 +1,15 @@
 ﻿from waitress import serve
 
+import re
 import json
 import math
 import logging
 import threading
 import concurrent.futures
+from fnmatch import fnmatch
 from itertools import islice
 from urllib.parse import unquote
-from typing import Tuple
+from typing import Tuple, Optional
 
 import flask
 import requests
@@ -36,6 +38,7 @@ app = flask.Flask(__name__)
 with open('./data/屏蔽词.json', encoding='utf8') as f:
     屏蔽词 = {*json.load(f)}
 
+
 @app.route('/search')
 def search():
     resp = _search()
@@ -54,14 +57,21 @@ def test():
 
 def _search():
     try:
-        kiss = 分(flask.request.args.get('q', ''), 多=False)
+        q = flask.request.args.get('q', '')
+        kiss = []
+        site = None
+        for x in q.split():
+            if t:=re.findall('^site:(.*)$', x):
+                site = t[0]
+            else:
+                kiss += 分(x, 多=False)
         kiss = [i for i in kiss if i not in 屏蔽词]
         assert len(kiss) < 20, '太多了，不行！'
-        a, b = map(int, flask.request.args.get('slice', '0:7').split(':'))
+        a, b = map(int, flask.request.args.get('slice', '0:10').split(':'))
         assert 0 <= a < b and b-a <= 10, '太长了，不行！'
         sli = slice(a, b)
         with 计时(kiss):
-            结果, 总数 = 查询(kiss, sli)
+            结果, 总数 = 查询(kiss, sli, site)
             data = {
                 '分词': kiss,
                 '数量': {i: (len(反向索引[i]) if i in 反向索引 else 0) for i in kiss},
@@ -92,7 +102,7 @@ def 坏(url):
     return s
 
 
-def 初步查询(keys: list, sli: slice):
+def 初步查询(keys: list, sli: slice, site: Optional[str]=None):
     记录 = {}
     默认值 = {}
     for key in keys:
@@ -105,24 +115,30 @@ def 初步查询(keys: list, sli: slice):
             记录.setdefault(url, {})[key] = v
     d = {}
     for url, vs in 记录.items():
-        繁荣 = 繁荣表.get(netloc(url), 0)
+        loc = netloc(url)
+        if site and not (fnmatch(loc, site) or fnmatch(loc, '*.'+site)):
+            continue
+        繁荣 = 繁荣表.get(loc, 0)
         不喜欢 = 坏(url)
         p = 1
         for key in keys:
             p *= vs.get(key, 默认值[key])
         d[url] = p*math.log2(2+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
     q = sorted([(v, k) for k, v in d.items()], reverse=True)
-    qq = [*islice(小小清洗(q, 1), sli.start, sli.stop, sli.step)]
+    l = 1
+    if site:
+        l = 99999
+    qq = [*islice(小小清洗(q, l), sli.start, sli.stop, sli.step)]
     return qq, 记录, len(d)
 
 
-def 查询(keys: list, sli=slice(0, 7)):
+def 查询(keys: list, sli=slice(0, 10), site: Optional[str]=None):
     with 计时(f'初步查询{keys}'):
-        q, 记录, 总数 = 初步查询(keys, sli)
+        q, 记录, 总数 = 初步查询(keys, sli, site)
     res = []
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=len(q)+1)
     for (v, url), y in zip(q, pool.map(缓存摘要, [i[1] for i in q])):
-        if y:
+        if y and (y[0] or y[1] or y[2]):
             title, description, text = y
             msg = {
                 '标题': title,
@@ -131,8 +147,7 @@ def 查询(keys: list, sli=slice(0, 7)):
                 '文本长度': len(text),
             }
         else:
-            g = 门.get(url)
-            if g:
+            if g := 门.get(url):
                 title, description = g
                 print(f'从门中拿到了{url}')
                 msg = {
@@ -152,10 +167,14 @@ def 查询(keys: list, sli=slice(0, 7)):
     return res, 总数
 
 
-def 预览(k, text):
+def 预览(k, text) -> str:
+    return _预览(k, text, 1000) or _预览(k, text, 5000)
+
+
+def _预览(k, text, limit) -> str:
     窗口长 = 32
     最后出现位置 = {x: -1 for x in k}
-    c = 切(text[:3000])
+    c = 切(text[:limit])
     best = (0, 0)
     for i, s in enumerate(c):
         s = s.lower()
