@@ -2,7 +2,6 @@ import json
 import time
 import shutil
 import random
-import logging
 from pathlib import Path
 from collections import Counter
 from urllib.parse import urlparse
@@ -16,11 +15,13 @@ import 信息
 from 文 import 缩, 摘要
 from 存储 import 融合之门
 from 配置 import 爬取线程数, 单网页最多关键词, 入口
+from utils import tqdm_exception_logger
+
 
 门 = 融合之门('./savedata/门')
 繁荣表 = 信息.繁荣表()
 
-a = tqdm()
+a = tqdm(desc='访问url数')
 
 
 if Path('savedata/网站信息.json').is_file():
@@ -64,11 +65,11 @@ def 求质量(url):
     if not title:
         s *= 0.2
     if not description:
-        s *= 0.6
+        s *= 0.7
     if not url.startswith('https'):
         s *= 0.8
     if 'm' in url.split('.'):
-        s *= 0.8
+        s *= 0.6
     return s
 
 
@@ -92,12 +93,12 @@ def 超吸(url):
         中文度, 已访问次数, 质量 = 网站信息.get(超b, (0.5, 1, None))
         if 质量 is None:
             质量 = 求质量(f'https://{超b}/')
-        已访问次数 += 0.05
+        已访问次数 += 0.1
         网站信息[超b] = 中文度, 已访问次数, 质量
 
         return href
     except Exception as e:
-        logging.warning(f'{url} 出错了，{e}')
+        tqdm_exception_logger(e)
         time.sleep(0.25)
         return []
 

@@ -5,6 +5,7 @@ from functools import lru_cache
 from urllib.parse import urlparse
 from typing import Iterable, Tuple
 
+from tqdm import tqdm
 import jieba as jiba
 
 from 类 import 阵
@@ -47,3 +48,11 @@ def 切(s: str, 多=False):
         return jiba.lcut_for_search(s)
     else:
         return jiba.lcut(s)
+
+
+_tl = {}
+def tqdm_exception_logger(e):
+    s = type(e).__name__
+    if s not in _tl:
+        _tl[s] = tqdm(desc=f'{s}', ncols=60)
+    _tl[s].update(1)
