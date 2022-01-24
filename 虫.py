@@ -8,6 +8,7 @@ import requests
 
 from 配置 import 爬虫的名字
 
+logging.getLogger('urllib3.connection').setLevel(logging.CRITICAL)  # urllib3太吵了
 
 class LoliError(Exception):
     ...
@@ -45,5 +46,5 @@ def 爬(url, **d) -> Optional[str]:
     try:
         return 真爬(url, **d)
     except LoliError as e:
-        logging.warning(f'{url} {e}')
+        logging.info(f'{url} {e}')
         return None
