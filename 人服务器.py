@@ -168,7 +168,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str]=None):
 
 
 def 预览(k, text) -> str:
-    return _预览(k, text, 1000) or _预览(k, text, 5000)
+    return _预览(k, text, 1000) or _预览(k, text, 7500)
 
 
 def _预览(k, text, limit) -> str:
@@ -188,9 +188,9 @@ def _预览(k, text, limit) -> str:
     else:
         b1 = best[1]
         if b1 < 窗口长:
-            a, b = 0, 窗口长+10
+            a, b = 0, 窗口长+12
         else:
-            a, b = b1-窗口长, b1+10
+            a, b = b1-窗口长, b1+12
         r = ''.join(c[a: b])
         if len(c) > b:
             r += '...'
@@ -200,10 +200,10 @@ def _预览(k, text, limit) -> str:
 @cache.disk_cache(path='./savedata/缓存摘要', serialize='json')
 def _缓存摘要(url: str) -> Tuple[str, str, str]:
     if threading.current_thread().name == 'slow':
-        r = 文.摘要(url, 乖=False, timeout=60)
+        r = 文.摘要(url, 乖=False, timeout=60, 大小限制=15000)
         print(f'慢慢获取「{url}」成功了！')
         return r[:3]
-    return 文.摘要(url, 乖=False, timeout=在线摘要限时, 大小限制=10000)[:3]
+    return 文.摘要(url, 乖=False, timeout=在线摘要限时, 大小限制=15000)[:3]
 
 
 def 缓存摘要(url: str):
