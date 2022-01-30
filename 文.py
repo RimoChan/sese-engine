@@ -28,7 +28,7 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str]]:
     href = []
     title = ''
     description = ''
-    def dfs(r):
+    def dfs(r: lxml.html.HtmlElement):
         nonlocal title, description
         if r.tag in ('script', 'style'):
             return
@@ -63,5 +63,8 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str]]:
                     text.append(s)
         for x in r:
             dfs(x)
+        if r.tail:
+            if t:=re.sub('\s+', ' ', r.tail).strip():
+                text.append(t)
     dfs(root)
     return title, description, ' '.join(text), href
