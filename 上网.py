@@ -173,3 +173,4 @@ def bfs(start, epoch=999999):
 
 while True:
     bfs(入口)
+    time.sleep(5)
