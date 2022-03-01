@@ -15,7 +15,7 @@ import 信息
 from 文 import 缩, 摘要
 from 存储 import 融合之门
 from 配置 import 爬取线程数, 单网页最多关键词, 入口
-from utils import tqdm_exception_logger
+from utils import tqdm_exception_logger, 坏
 
 
 门 = 融合之门('./savedata/门')
@@ -53,7 +53,7 @@ def 摘(url):
     门[url] = title, description[:256]
     l = 分析.龙(title, description, text)
     if l:
-        l = sorted(l, key=lambda x:x[1], reverse=True)[:单网页最多关键词]
+        l = sorted(l, key=lambda x: x[1], reverse=True)[:单网页最多关键词]
         data = [url, l]
         requests.post('http://127.0.0.1:5000/l', data=json.dumps(data)).raise_for_status()
     return r
@@ -119,7 +119,7 @@ def 喜欢(url) -> float:
     else:
         _, 已访问次数2, __ = 网站信息.get(超b, (0.5, 1, 1))
         兴趣2 = 计算兴趣(超b, 已访问次数2)
-    return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2)
+    return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url))
 
 
 def 重整(url_list):
@@ -169,6 +169,8 @@ def bfs(start, epoch=999999):
         })
         with open('打点.json', 'w', encoding='utf8') as f:
             f.write(json.dumps(打点, indent=2, ensure_ascii=False))
+        if len(吸过) > 5*10**6:
+            吸过 = set()
 
 
 while True:

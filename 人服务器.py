@@ -17,7 +17,7 @@ import requests
 from rimo_utils.计时 import 计时
 from rimo_storage import cache
 
-from utils import netloc, 小小清洗, 切
+from utils import netloc, 小小清洗, 切, 坏
 import 文
 import 信息
 from 存储 import 索引空间, 融合之门
@@ -90,16 +90,6 @@ def _search():
             status=500,
             mimetype='application/json',
         )
-
-
-def 坏(url):
-    s = max(0, (len(url)-35)/350)
-    if '.htm' in url or '.php' in url:
-        s += 0.3
-    if len(url.rstrip('/').split('/')) > 3:
-        s += 0.2
-    s = min(s, 0.9)
-    return s
 
 
 def 初步查询(keys: list, sli: slice, site: Optional[str]=None):

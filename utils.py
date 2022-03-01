@@ -56,3 +56,13 @@ def tqdm_exception_logger(e):
     if s not in _tl:
         _tl[s] = tqdm(desc=f'{s}', ncols=60)
     _tl[s].update(1)
+
+
+def 坏(url: str) -> float:
+    s = max(0, (len(url)-30)/250)
+    if '.htm' in url or '.php' in url:
+        s += 0.3
+    if len(url.rstrip('/').split('/')) > 3:
+        s += 0.2
+    s = min(s, 0.9)
+    return s
