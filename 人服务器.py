@@ -93,7 +93,7 @@ def _search():
 
 
 def 坏(url):
-    s = max(0, (len(url)-35)/400)
+    s = max(0, (len(url)-35)/350)
     if '.htm' in url or '.php' in url:
         s += 0.3
     if len(url.rstrip('/').split('/')) > 3:
@@ -138,7 +138,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str]=None):
     res = []
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=len(q)+1)
     for (v, url), y in zip(q, pool.map(缓存摘要, [i[1] for i in q])):
-        if y and (y[0] or y[1] or y[2]):
+        if y and y[0]:
             title, description, text = y
             msg = {
                 '标题': title,
