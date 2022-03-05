@@ -36,8 +36,14 @@ def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> str:
         data = next(resp.iter_content(大小限制))
     else:
         data = resp.content
-    if resp.encoding == 'ISO-8859-1':
-        return data.decode('utf8', 'ignore')  # 猜测编码的性能太差，直接硬上
+    if resp.encoding == 'ISO-8859-1':   # 猜测编码的性能太差，直接硬上
+        try:
+            return data.decode('utf8')  
+        except Exception:
+            try:
+                return data.decode('gbk')
+            except Exception:
+                return data.decode('utf8', 'ignore')
     else:
         return data.decode(resp.encoding, 'ignore')
 
