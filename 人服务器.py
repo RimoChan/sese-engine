@@ -139,15 +139,19 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str]=None):
         else:
             if g := 门.get(url):
                 title, description = g
+                text = ''
                 print(f'从门中拿到了{url}')
                 msg = {
                     '标题': title,
                     '描述': 预览(keys, description),
-                    '文本': '',
+                    '文本': text,
                     '文本长度': None,
                 }
             else:
                 msg = None
+        if msg and (not msg['描述'] and not msg['文本']):
+            msg['描述'] = description[:80]
+            msg['文本'] = text[:80]
         res.append({
             '分数': {'终': v[0], '相关': v[1], '繁荣': v[2], '不喜欢': v[3]},
             '网址': unquote(url),
