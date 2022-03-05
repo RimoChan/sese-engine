@@ -158,8 +158,9 @@ def bfs(start, epoch=999999):
         上l = len(新q)
         q = 重整(新q)
 
-        with open('savedata/网站信息.json', 'w', encoding='utf8') as f:
-            f.write(json.dumps(网站信息, indent=2, ensure_ascii=False))
+        if random.random() < 0.1:
+            with open('savedata/网站信息.json', 'w', encoding='utf8') as f:
+                f.write(json.dumps(网站信息, indent=2, ensure_ascii=False))
 
         c = Counter([urlparse(x).netloc for x in q])
         打点.append({
@@ -169,7 +170,7 @@ def bfs(start, epoch=999999):
         })
         with open('打点.json', 'w', encoding='utf8') as f:
             f.write(json.dumps(打点, indent=2, ensure_ascii=False))
-        if len(吸过) > 5*10**6:
+        if len(吸过) > 3*10**6:
             吸过 = set()
 
 
