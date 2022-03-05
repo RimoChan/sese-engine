@@ -3,6 +3,7 @@
 import re
 import json
 import math
+import heapq
 import logging
 import threading
 import concurrent.futures
@@ -17,7 +18,7 @@ import requests
 from rimo_utils.计时 import 计时
 from rimo_storage import cache
 
-from utils import netloc, 小小清洗, 切, 坏
+from utils import netloc, 切, 坏
 import 文
 import 信息
 from 存储 import 索引空间, 融合之门
@@ -92,6 +93,26 @@ def _search():
         )
 
 
+def 重排序(q):
+    d = {}
+    倍 = {}
+    堆 = []
+    for v, url in q:
+        d.setdefault(netloc(url).lower(), []).append((v, url))
+    for k, l in d.items():
+        倍[k] = 1
+        l.sort()
+        x = l.pop()
+        heapq.heappush(堆, (-x[0][0], x, k))
+    while 堆:
+        _, x, k = heapq.heappop(堆)
+        yield x
+        if d[k]:
+            倍[k] /= 8
+            x = d[k].pop()
+            heapq.heappush(堆, (-x[0][0]*倍[k], x, k))
+
+
 def 初步查询(keys: list, sli: slice, site: Optional[str]=None):
     记录 = {}
     默认值 = {}
@@ -114,11 +135,8 @@ def 初步查询(keys: list, sli: slice, site: Optional[str]=None):
         for key in keys:
             p *= vs.get(key, 默认值[key])
         d[url] = p*math.log2(2+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
-    q = sorted([(v, k) for k, v in d.items()], reverse=True)
-    l = 1
-    if site:
-        l = 99999
-    qq = [*islice(小小清洗(q, l), sli.start, sli.stop, sli.step)]
+    q = [(v, k) for k, v in d.items()]
+    qq = [*islice(重排序(q), sli.start, sli.stop, sli.step)]
     return qq, 记录, len(d)
 
 
