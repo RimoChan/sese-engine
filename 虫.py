@@ -33,7 +33,11 @@ def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> str:
     if 'text/html' not in resp.headers.get('Content-Type', ''):
         raise LoliError(f'类型{resp.headers.get("Content-Type")}不行！')
     if 大小限制:
-        data = next(resp.iter_content(大小限制))
+        data = b''
+        for b in resp.iter_content(4096):
+            data += b
+            if len(data)>大小限制:
+                break
     else:
         data = resp.content
     if resp.encoding == 'ISO-8859-1':   # 猜测编码的性能太差，直接硬上
