@@ -31,7 +31,7 @@ def 小小清洗(q: 阵, l: int) -> Iterable[Tuple[float, str]]:
     for v, url in q:
         if '\n' in url:     # 我也不知道为什么会有这个，扫一段时间之后去掉吧
             url = url.replace('\n', '')
-        s = netloc(url)
+        s = netloc(url).lower()
         if y.setdefault(s, 0) >= l:
             continue
         y[s] += 1
