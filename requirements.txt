@@ -12,3 +12,4 @@ guppy3==3.1.2
 brotli==1.0.9
 urllib3==1.22
 rimo-storage==1.2.0
+fasttext==0.9.2
