@@ -17,7 +17,6 @@ def netloc(url: str) -> str:
     try:
         return re.findall('//(.*?)(?=/|\?|$)', url)[0]
     except Exception:
-        logging.warning(f'解析{repr(url)}居然失败了！')
         return urlparse(url).netloc
 
 
