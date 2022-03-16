@@ -9,6 +9,7 @@ import threading
 import concurrent.futures
 from fnmatch import fnmatch
 from itertools import islice
+from functools import lru_cache
 from urllib.parse import unquote
 from typing import Tuple, Optional
 
@@ -21,10 +22,9 @@ from rimo_storage import cache
 from utils import netloc, 切, 坏
 import 文
 import 信息
-from 存储 import 索引空间, 融合之门
+from 存储 import 索引空间, 融合之门, 网站信息表
 from 分析 import 分
 from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url
-
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
@@ -34,7 +34,7 @@ app = flask.Flask(__name__)
 门 = 融合之门('./savedata/门')
 
 繁荣表 = 信息.繁荣表()
-
+网站信息 = 网站信息表('savedata/网站信息')
 
 with open('./data/屏蔽词.json', encoding='utf8') as f:
     屏蔽词 = {*json.load(f)}
@@ -56,13 +56,16 @@ def test():
     )
 
 
+_息 = lru_cache(maxsize=4096)(lambda b: 网站信息.get(b, {}))
+
+
 def _search():
     try:
         q = flask.request.args.get('q', '')
         kiss = []
         site = None
         for x in q.split():
-            if t:=re.findall('^site:(.*)$', x):
+            if t := re.findall('^site:(.*)$', x):
                 site = t[0]
             else:
                 kiss += 分(x, 多=False)
@@ -113,7 +116,7 @@ def 重排序(q):
             heapq.heappush(堆, (-x[0][0]*倍[k], x, k))
 
 
-def 初步查询(keys: list, sli: slice, site: Optional[str]=None):
+def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
     记录 = {}
     默认值 = {}
     for key in keys:
@@ -134,13 +137,19 @@ def 初步查询(keys: list, sli: slice, site: Optional[str]=None):
         p = 1
         for key in keys:
             p *= vs.get(key, 默认值[key])
-        d[url] = p*math.log2(2+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢
-    q = [(v, k) for k, v in d.items()]
+        d[url] = p*math.log2(2+繁荣)*(1-不喜欢), p, 繁荣, 不喜欢, 1
+    def r(v, k):
+        中文度 = _息(netloc(k)).get('语种', {}).get('zh', 0)
+        倍 = 1 + 中文度*0.5
+        vv = v[0]*倍, v[1], v[2], v[3], 倍
+        return (vv, k)
+    q = sorted([(v, k) for k, v in d.items()], reverse=True)
+    q[:256] = [r(v, k) for v, k in q[:256]]
     qq = [*islice(重排序(q), sli.start, sli.stop, sli.step)]
     return qq, 记录, len(d)
 
 
-def 查询(keys: list, sli=slice(0, 10), site: Optional[str]=None):
+def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
     with 计时(f'初步查询{keys}'):
         q, 记录, 总数 = 初步查询(keys, sli, site)
     res = []
@@ -171,7 +180,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str]=None):
             msg['描述'] = description[:80]
             msg['文本'] = text[:80]
         res.append({
-            '分数': {'终': v[0], '相关': v[1], '繁荣': v[2], '不喜欢': v[3]},
+            '分数': {'终': v[0], '相关': v[1], '繁荣': v[2], '不喜欢': v[3], '中文': v[4]},
             '网址': unquote(url),
             '信息': msg,
             '相关性': {k: 记录[url].get(k, 0) for k in keys},
