@@ -1,5 +1,7 @@
 import struct
+import base64
 import hashlib
+import urllib.parse
 from typing import MutableMapping
 
 import brotli
@@ -31,9 +33,8 @@ def load(b: bytes) -> 阵:
 
 
 empty = dump([])
-c = lambda x: brotli.compress(x, quality=4)
+c = lambda x: brotli.compress(x, quality=6)
 d = lambda x: brotli.decompress(x) if x != b'' else empty
-
 
 def 索引空间(path) -> MutableMapping[str, 阵]:
     return 超dict(path, compress=(c, d), serialize=(dump, load))
@@ -41,6 +42,11 @@ def 索引空间(path) -> MutableMapping[str, 阵]:
 
 class 融合之门(MutableMapping):
     def __init__(self, path):
+        def d(x):
+            try:
+                return brotli.decompress(x)
+            except Exception:
+                return '[]'
         self.d = 超dict(path, compress=(c, d))
 
     def __getitem__(self, k):
@@ -65,4 +71,31 @@ class 融合之门(MutableMapping):
                 原.append((k, v))
             self.d[真k] = 原
 
-    __iter__=__len__=__delitem__=lambda: 0/0
+    __iter__ = __len__ = __delitem__ = lambda: 0/0
+
+
+class 网站信息表(超dict):
+    def __init__(self, path):
+        super().__init__(path, compress=(c, brotli.decompress))
+
+    def encode(self, s: str)->str:
+        return '_'.join(map(str, s.encode('utf8')))
+
+    def decode(self, s: str)->str:
+        a = s.split('_')
+        return struct.pack(f'{len(a)}B', *map(int, a)).decode('utf8')
+
+    def __getitem__(self, k):
+        try:
+            return super().__getitem__(self.encode(k))
+        except brotli.error:
+            print(f'读取网站信息「{k}」时解压失败了！')
+            return {}
+
+    def __setitem__(self, k, v):
+        return super().__setitem__(self.encode(k), v)
+
+    def __iter__(self):
+        for i in super().__iter__():
+            yield self.decode(i)
+    __delitem__ = lambda: 0/0
