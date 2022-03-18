@@ -130,7 +130,7 @@ def 重整(url_list: list):
         a += v[:sn]
     缓存信息 = {k: 网站信息.get(k) for k in ({netloc(url) for url in a}|{缩(url) for url in a})}
     a.sort(key=lambda x: 喜欢(x) * random.random(), reverse=True)
-    a = a[:2500]
+    a = a[:5000]
     random.shuffle(a)
     return a
 
@@ -143,16 +143,16 @@ def bfs(start, epoch=999999):
     pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
     for _ in range(epoch):
-        新q = []
         if not q:
             break
         for i in q:
             吸过.add(i)
+        新q = set()
         for href in pool.map(超吸, q):
             for i in href:
                 if i not in 吸过:
-                    新q.append(i)
-        新q = list(set(新q))
+                    新q.add(i)
+        新q = list(新q)
         上l = len(新q)
         q = 重整(新q)
 
