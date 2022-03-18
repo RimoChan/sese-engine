@@ -30,7 +30,7 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str]]:
     description = ''
     def dfs(r: lxml.html.HtmlElement):
         nonlocal title, description
-        if r.tag in ('script', 'style'):
+        if r.tag in ('script', 'style', 'svg'):
             return
         if r.tag == 'meta' and r.attrib.get('name', '').lower() == 'description':
             description = r.attrib.get('content', '')
