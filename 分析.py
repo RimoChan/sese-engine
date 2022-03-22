@@ -5,7 +5,7 @@ from utils import 切
 
 
 def 收缩(s):
-    return (''.join([i for i in s if 'a' <= i <= 'z' or 'A' <= i <= 'Z' or '\u4e00' <= i <= '\u9fa5'])).lower()
+    return (''.join([i for i in s if 'a' <= i <= 'z' or 'A' <= i <= 'Z' or '0' <= i <= '9' or '\u4e00' <= i <= '\u9fa5'])).lower()
 
 
 def 分(s, 多=True):
