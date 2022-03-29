@@ -1,8 +1,10 @@
 import re
 import json
 import logging
+import threading
 from functools import lru_cache
 from urllib.parse import urlparse
+from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, Tuple
 
 from tqdm import tqdm
@@ -26,11 +28,42 @@ def json_loads(s):
     return json.loads(s, parse_float=_fl)
 
 
+# concurrent.futures.ThreadPoolExecutor.map 会占用大量不必要的内存
+class 好ThreadPoolExecutor(ThreadPoolExecutor):
+    _nothing = object()
+    def map(self, fn, *iterables):
+        lock = threading.Lock()
+        z = [*zip(*iterables)][::-1]
+        res = [好ThreadPoolExecutor._nothing] * len(z)
+        def gf():
+            with lock:
+                if z:
+                    zz = z.pop()
+                    f = self.submit(fn2, *zz)
+                    res[len(z)] = f
+        def fn2(*li, **d):
+            res = fn(*li, **d)
+            gf()
+            return res
+        for _ in range(min(len(z), self._max_workers)):
+            gf()
+        def result_iterator():
+            nonlocal z
+            try:
+                while res:
+                    yield res.pop().result()
+            finally:
+                with lock:
+                    z = []
+                    for fs in res:
+                        if fs is not 好ThreadPoolExecutor._nothing:
+                            fs.cancel()
+        return result_iterator()
+
+
 def 小小清洗(q: 阵, l: int) -> Iterable[Tuple[float, str]]:
     y = {}
     for v, url in q:
-        if '\n' in url:     # 我也不知道为什么会有这个，扫一段时间之后去掉吧
-            url = url.replace('\n', '')
         s = netloc(url).lower()
         if y.setdefault(s, 0) >= l:
             continue
@@ -73,3 +106,24 @@ def 检测语言(s: str)-> str:
     lang = lang_model.predict(s)[0][0]
     assert lang.startswith('__label__')
     return lang[9:]
+
+
+def 分解(url: str):
+    if url.startswith('https://'):
+        url = url[8:]
+    elif url.startswith('http://'):
+        url = url[7:]
+    else:
+        return
+    url = url.replace('?', '/')
+    url = url.replace('#', '/')
+    if url.endswith('/'):
+        url = url[:-1]
+    if not url or url[0] in ' /%':
+        return
+    sp = url.split('/')
+    s = sp[0]
+    yield s
+    for i in sp[1:]:
+        s = f'{s}/{i}'
+        yield s

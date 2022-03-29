@@ -15,11 +15,12 @@ def 缩(url):
     return f'{t.domain}.{t.suffix}'
 
 
-def 摘要(url: str, **d) -> Tuple[str, str, str, List[str]]:
-    raw = 爬(url, **d)
-    if not raw:
-        return '', '', '', []
-    q = urlparse(url)
+def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str]:
+    if t:=爬(url, **d):
+        raw, 真url = t
+    else:
+        return '', '', '', [], url
+    q = urlparse(真url)
     基 = f'{q.scheme}://{q.netloc}'
 
     root = lxml.html.document_fromstring(raw)
@@ -67,4 +68,4 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str]]:
             if t:=re.sub('\s+', ' ', r.tail).strip():
                 text.append(t)
     dfs(root)
-    return title, description, ' '.join(text), href
+    return title, description, ' '.join(text), href, 真url

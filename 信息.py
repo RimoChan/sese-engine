@@ -1,14 +1,24 @@
 import json
 from pathlib import Path
 
+import yaml
+
+from 配置 import 存储位置
+
+
+def _归1化(d):
+    q = [v for k, v in d.items() if '/' not in k]
+    总能量 = sum(q)
+    倍 = 300000/总能量
+    return {k: v*倍 for k, v in d.items()}
+
 
 def 繁荣表():
-    if not Path('savedata/繁荣.json').is_file():
+    if not (存储位置/'繁荣.json').is_file():
         return {}
-    with open('savedata/繁荣.json', encoding='utf8') as f:
+    with open(存储位置/'繁荣.json', encoding='utf8') as f:
         d = json.load(f)
-    总 = sum(d.values())
-    d = {k: v/总*300000 for k, v in d.items()}
+    d = _归1化(d)
     for k, v in d.items():
         now = k
         while True:
@@ -17,4 +27,12 @@ def 繁荣表():
                 break
             if d[now] < v:
                 d[now] = v
+    return d
+
+
+def 调整表():
+    if not (Path('./data')/'调整.yaml').is_file():
+        return {}
+    with open(Path('./data')/'调整.yaml', encoding='utf8') as f:
+        d = yaml.safe_load(f)
     return d

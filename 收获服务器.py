@@ -1,6 +1,7 @@
 ﻿import os
 import logging
 import threading
+from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 
 import flask
@@ -8,23 +9,22 @@ from tqdm import tqdm
 
 from 类 import 阵
 from 存储 import 索引空间
-from utils import netloc, json_loads, 小清洗
+from utils import netloc, json_loads, 小清洗, 好ThreadPoolExecutor
 
-from 配置 import 单键最多url, 单键内存最多url, 单键最多相同域名url, 大清洗间隔
+from 配置 import 单键最多url, 单键最多相同域名url, 存储位置
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 app = flask.Flask(__name__)
 
-偏执 = 0
 
-面板 = {x: tqdm(desc=x) for x in ['内存键数', '小清洗次数']}
+面板 = {x: tqdm(desc=x) for x in ['内存键数', '丢弃行数']}
 
-df = 索引空间('./savedata/键')
-
+df = 索引空间(存储位置/'键')
 临时df = {}
-
+偏执 = 0
 大清 = threading.Lock()
+
 
 def 消重(q: 阵) -> 阵:
     qq = []
@@ -37,6 +37,15 @@ def 消重(q: 阵) -> 阵:
     return qq
 
 
+@lru_cache(maxsize=100_0000)
+def 低(k: str) -> float:
+    l = df.get(k, [])
+    if len(l) < 单键最多url:
+        return -1
+    else:
+        return sorted([v for v, url in l], reverse=True)[单键最多url-1]
+
+
 @app.route('/l', methods=['POST'])
 def l():
     global 偏执
@@ -47,19 +56,20 @@ def l():
         if k not in 临时df:
             临时df[k] = []
         dfk = 临时df[k]
+        if len(dfk) > 10 and v < 低(k):
+            面板['丢弃行数'].update(1)
+            continue
         dfk.append((v, 文件名))
-        if len(dfk) > 单键内存最多url*2:
-            面板['小清洗次数'].update(1)
-            临时df[k] = 小清洗(sorted(dfk, reverse=True), 单键最多相同域名url)[:单键内存最多url]
     面板['内存键数'].n = len(临时df)
     面板['内存键数'].refresh()
     大清.acquire()
     偏执 += 1
-    if 偏执 > 大清洗间隔:
-        面板['小清洗次数'].update(-面板['小清洗次数'].n)
-        偏执 = 0
-        大清洗()
-        os._exit(0)   # 我也想不通这就100行代码居然有内存泄漏，我也不知道漏在哪里了，先靠重启解决吧
+    if 偏执 % 10000 == 9999:
+        内存行数 = sum([len(临时df[k]) for k in [*临时df]])
+        if 内存行数 > 1000_0000:
+            偏执 = 0
+            大清洗()
+            os._exit(0)   # 我也想不通这就100行代码居然有内存泄漏，我也不知道漏在哪里了，先靠重启解决吧
     大清.release()
     return 'ok'
 
@@ -71,18 +81,18 @@ def 洗(item):
         if len(v) < 3:
             return
     z = 消重(tuple(v) + tuple(原v))
-    if len(z) > 单键最多url*1.25:
+    if len(z) > 单键最多url*1.1:
         z = 小清洗(sorted(z, reverse=True), 单键最多相同域名url)[:单键最多url]
     df[k] = z
 
 
-pool = ThreadPoolExecutor(max_workers=4)
 def 大清洗():
     global 临时df, df
+    pool = 好ThreadPoolExecutor(max_workers=8)
     try:
-        锁定df = 临时df.copy()
+        _临时df = 临时df
         临时df = {}
-        for i in tqdm(pool.map(洗, 锁定df.items()), ncols=70, desc='大清洗', total=len(锁定df)):
+        for i in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
             None
     except Exception as e:
         print('完蛋了！')
