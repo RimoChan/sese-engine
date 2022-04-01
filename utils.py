@@ -62,10 +62,14 @@ class 好ThreadPoolExecutor(ThreadPoolExecutor):
 
 
 def 小小清洗(q: 阵, l: int) -> Iterable[Tuple[float, str]]:
+    def 好(url: str):
+        if url.startswith('https://'):
+            url = url[8:]
+        return len(url.rstrip('/').split('/'))==1
     y = {}
     for v, url in q:
         s = netloc(url).lower()
-        if y.setdefault(s, 0) >= l:
+        if y.setdefault(s, 0) >= l and not 好(url):
             continue
         y[s] += 1
         yield v, url
