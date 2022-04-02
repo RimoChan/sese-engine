@@ -3,6 +3,7 @@ import logging
 import threading
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
+from typing import Tuple
 
 import flask
 from tqdm import tqdm
@@ -18,7 +19,7 @@ logging.getLogger('werkzeug').setLevel(logging.ERROR)
 app = flask.Flask(__name__)
 
 
-面板 = {x: tqdm(desc=x) for x in ['内存键数', '丢弃行数']}
+面板 = {x: tqdm(desc=x) for x in ['内存键数', '收到请求数', '丢弃行数']}
 
 df = 索引空间(存储位置/'键')
 临时df = {}
@@ -52,11 +53,12 @@ def l():
     文件名, kvs = json_loads(flask.request.data)
     文件名 = 文件名.replace('\n', '')
     netloc(文件名)
+    面板['收到请求数'].update(1)
     for k, v in kvs:
         if k not in 临时df:
             临时df[k] = []
         dfk = 临时df[k]
-        if len(dfk) > 10 and v < 低(k):
+        if len(dfk) > 15 and v < 低(k):
             面板['丢弃行数'].update(1)
             continue
         dfk.append((v, 文件名))
@@ -74,16 +76,17 @@ def l():
     return 'ok'
 
 
-def 洗(item):
+def 洗(item) -> Tuple[int, str]:
     k, v = item
     原v = df.get(k, [])
     if not 原v:
         if len(v) < 3:
-            return
+            return 0, '丢弃'
     z = 消重(tuple(v) + tuple(原v))
     if len(z) > 单键最多url*1.1:
         z = 小清洗(sorted(z, reverse=True), 单键最多相同域名url)[:单键最多url]
     df[k] = z
+    return len(z) - len(原v), '新增' if not 原v else '变长'
 
 
 def 大清洗():
@@ -92,8 +95,12 @@ def 大清洗():
     try:
         _临时df = 临时df
         临时df = {}
-        for i in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
-            None
+        总 = 0
+        状态统计 = {}
+        for i, 状态 in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
+            总 += i
+            状态统计[状态] = 状态统计.get(状态, 0) + 1
+        print(f'\n\n\n清洗好了。\n总共增加了{总}行。\n键状态: {状态统计}')
     except Exception as e:
         print('完蛋了！')
         logging.exception(e)
