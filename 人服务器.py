@@ -169,7 +169,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             不喜欢 = 坏(url)
             相关 = 1
             for key in keys:
-                vp = vs.get(key, 默认值[key])
+                vp = vs.get(key) or 默认值[key]
                 if vp > 0.2:
                     vp = 0.2 + (vp - 0.2) / 2.2
                 if vp > 0.1:
@@ -178,15 +178,17 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, 不喜欢, 1, 1, 调整
     with 计时(f'初排序{keys}'):
         q = sorted([(v, k) for k, v in d.items()], reverse=True)
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=128)
     with 计时(f'语种权重{keys}'):
-        def r(v, k):
+        def r(item):
+            v, k = item
             语种 = _息(netloc(k)).get('语种', {})
             中文度 = 语种.get('zh', 0)
             怪文度 = sum(语种.values()) - 语种.get('zh', 0) - 语种.get('en', 0) - 语种.get('ja', 0)
             倍 = 1 + 中文度*0.5 - 怪文度*0.5
             vv = v[0]*倍, v[1], v[2], v[3], 倍, v[5], v[6]
             return (vv, k)
-        q[:128] = [r(v, k) for v, k in q[:128]]
+        q[:128] = [*pool.map(r, q[:128])]
     with 计时(f'重复性{keys}'):
         def r2(v, k, h):
             if h < 0.5:
@@ -198,7 +200,6 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
         def rf(item):
             v, url = item
             return (门.get(url) or [''])[0]
-        pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         复 = _重复性([*pool.map(rf, q[:64])])
         q[:64] = [r2(v, k, h) for (v, k), h in zip(q[:64], 复)]
     with 计时(f'重排序{keys}'):
