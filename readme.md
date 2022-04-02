@@ -6,36 +6,47 @@
 
 我们发明了强大并且安全的sese搜索引擎。它是一个轻量级的搜索引擎，可以轻松地部署在个人电脑上，有了它，你就可以在本地直接搜索互联网上的信息，再也不用担心这些问题啦！
 
-<img align='right' src='https://upyun.yunyoujun.cn/images/sese-banner-draft.png' width='320px'>
+<img align='right' src='https://upyun.yunyoujun.cn/images/sese-rimo-and-xiao-yun.png' width='320px'>
+
 
 ## 测试环境
 
 一起来玩吧: http://sese.yyj.moe
 
-前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)
-
-对了，服务器是1年70元租的机器，并发大就卡住是正常现象……
+对了，服务器是1年70元租的机器，有时候会卡住是正常现象。
 
 
-## 安装
+## 部署
 
-只需要1个Python3.8。  
-<sub>Python版本太高的话依赖会装不上，但是我也不知道怎么办……</sub>
+只需要1个Python3.8。数据库什么的都不用装，配环境很方便，好耶！
 
-数据库什么的都不用装，配环境非常方便，好耶！
+具体步骤是这些: 
 
-```sh
-pip install -r requirements.txt
-```
+1. 安装1个Python3.8
 
-用pip安装依赖就好啦！
+    Python版本太高的话，下一步会有依赖装不上。
+
+2. 用pip安装依赖
+
+    ```sh
+    pip install -r requirements.txt
+    ```
+
+3. 运行 `启动.cmd`
+
+    你肯定很奇怪为什么不是`.sh`，这是因为我买的服务器是windows的。
+
+
+这样你的搜索引擎服务应该就可以用了，你可以 `curl http://127.0.0.1:4950/search?q=test` 试一下。
+
+然后前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)。前端怎么部署呢，去看看云游君怎么说吧。
 
 
 ## 代价
 
 sese-engine的消耗不大，一个便宜的服务器或者树莓派就够用了。
 
-默认配置下，sese-engine的爬虫大约需要1个CPU和1~2G的内存，搜索服务几乎没有消耗。
+默认配置下，sese-engine的爬虫大约需要1~2个CPU和1~2G的内存，搜索服务几乎没有消耗。
 
 此外，需要的硬盘空间会缓慢增长，尽管它会增长得越来越慢但并没有上界……所以最好给树莓派插一个移动硬盘。
 
