@@ -1,3 +1,4 @@
+import orjson
 import struct
 import base64
 import hashlib
@@ -10,19 +11,17 @@ from rimo_storage import 超dict
 from 类 import 阵
 
 
-def dump(o: 阵) -> bytes:
+def dump2(o: 阵) -> bytes:
     c = [*zip(*o)] or ([], [])
     n = len(c[0])
-    吸1 = [x.encode('utf8') for x in c[1]]
-    字符串长度 = [len(s) for s in 吸1]
-    文hint = ''.join([f'{x}s' for x in 字符串长度])
+    希1 = orjson.dumps(c[1])
     nz = struct.pack('i', n)
-    内容 = struct.pack(f'{n}h{n}e{文hint}', *字符串长度, *c[0], *吸1)
-    z = nz+内容
+    内容 = struct.pack(f'{n}e{len(希1)}s', *c[0], 希1)
+    z = b'yn0001'+nz+内容
     return z
 
 
-def load(b: bytes) -> 阵:
+def _load1(b: bytes) -> 阵:
     n = struct.unpack('i', b[:4])[0]
     字符串长度 = struct.unpack(f'{n}h', b[4:4+n*2])
     吸0 = struct.unpack(f'{n}e', b[4+n*2:4+n*4])
@@ -32,12 +31,28 @@ def load(b: bytes) -> 阵:
     return [*zip(吸0, 吸1)]
 
 
-empty = dump([])
+def _load2(b: bytes) -> 阵:
+    assert b[:6]==b'yn0001', '版本不对'
+    n = struct.unpack('i', b[6:10])[0]
+    吸0 = struct.unpack(f'{n}e', b[10:10+n*2])
+    吸1 = orjson.loads(b[10+n*2:])
+    assert len(吸0)==len(吸1), '数据不完整'
+    return [*zip(吸0, 吸1)]
+
+
+def load(b: bytes) -> 阵:
+    if b.startswith(b'yn0001'):
+        return _load2(b)
+    else:
+        return _load1(b)
+
+
+empty = dump2([])
 c = lambda x: brotli.compress(x, quality=6)
 d = lambda x: brotli.decompress(x) if x != b'' else empty
 
 def 索引空间(path) -> MutableMapping[str, 阵]:
-    return 超dict(path, compress=(c, d), serialize=(dump, load))
+    return 超dict(path, compress=(c, d), serialize=(dump2, load))
 
 
 class 融合之门(MutableMapping):
@@ -71,31 +86,8 @@ class 融合之门(MutableMapping):
                 原.append((k, v))
             self.d[真k] = 原
 
+    def items(self):
+        for l in self.d.values():
+            yield from l
+
     __iter__ = __len__ = __delitem__ = lambda: 0/0
-
-
-class 网站信息表(超dict):
-    def __init__(self, path):
-        super().__init__(path, compress=(c, brotli.decompress))
-
-    def encode(self, s: str)->str:
-        return '_'.join(map(str, s.encode('utf8')))
-
-    def decode(self, s: str)->str:
-        a = s.split('_')
-        return struct.pack(f'{len(a)}B', *map(int, a)).decode('utf8')
-
-    def __getitem__(self, k):
-        try:
-            return super().__getitem__(self.encode(k))
-        except brotli.error:
-            print(f'读取网站信息「{k}」时解压失败了！')
-            return {}
-
-    def __setitem__(self, k, v):
-        return super().__setitem__(self.encode(k), v)
-
-    def __iter__(self):
-        for i in super().__iter__():
-            yield self.decode(i)
-    __delitem__ = lambda: 0/0

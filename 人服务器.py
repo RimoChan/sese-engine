@@ -23,7 +23,7 @@ from rimo_storage import cache
 from utils import netloc, 切, 坏, 分解
 import 文
 import 信息
-from 存储 import 索引空间, 融合之门, 网站信息表
+from 存储 import 索引空间, 融合之门
 from 分析 import 分
 from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置
 
@@ -37,7 +37,7 @@ app = flask.Flask(__name__)
 
 繁荣表 = 信息.繁荣表()
 调整表 = 信息.调整表()
-网站信息 = 网站信息表(存储位置/'网站信息')
+网站信息 = 融合之门(存储位置/'网站之门')
 
 with open('./data/屏蔽词.json', encoding='utf8') as f:
     屏蔽词 = {*json.load(f)}
@@ -53,7 +53,7 @@ def _荣(url: str):
         if s == 0:
             s = l
         else:
-            s = l + (s - l) / 2.5
+            s = l + (s - l) / 3
     return s
 
 
@@ -214,6 +214,8 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
     for (v, url), y in zip(q, pool.map(缓存摘要, [i[1] for i in q])):
         if y and y[0]:
             title, description, text = y
+            if '//zh.wikipedia.org' in url:
+                text = text.replace('维基百科，自由的百科全书', '').replace('跳到导航', '').replace('跳到搜索', '')
             msg = {
                 '标题': title,
                 '描述': 预览(keys, description),

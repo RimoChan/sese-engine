@@ -15,7 +15,7 @@ from rimo_utils.计时 import 计时
 import 分析
 import 信息
 from 文 import 缩, 摘要
-from 存储 import 融合之门, 网站信息表
+from 存储 import 融合之门
 from 配置 import 爬取线程数, 单网页最多关键词, 入口, 存储位置
 from utils import tqdm_exception_logger, 坏, 检测语言, netloc
 
@@ -25,11 +25,11 @@ from utils import tqdm_exception_logger, 坏, 检测语言, netloc
 
 访问url数 = tqdm(desc='访问url数')
 
-网站信息 = 网站信息表(存储位置/'网站信息')
+网站信息 = 融合之门(存储位置/'网站之门')
 
 
 def 摘(url) -> Tuple[str, str, str, List[str], str]:
-    r = 摘要(url)
+    r = 摘要(url, timeout=10)
     if len(url) >= 250:
         return r
     title, description, text, href, 真url = r

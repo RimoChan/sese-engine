@@ -9,13 +9,13 @@ from tqdm import tqdm
 from utils import 分解
 
 from 配置 import 存储位置
-from 存储 import 网站信息表
+from 存储 import 融合之门
 
 
 def 刷新():
-    网站信息 = 网站信息表(存储位置/'网站信息')
+    网站之门 = 融合之门(存储位置/'网站之门')
     d = {}
-    for i, (k, v) in tqdm(enumerate(iter(网站信息.items())), desc='域名个数'):
+    for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='域名个数'):
         a = v.get('链接')
         if not a:
             continue
