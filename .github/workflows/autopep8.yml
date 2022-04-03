@@ -1,0 +1,28 @@
+name: autopep8
+
+on:
+  push:
+    branches: [ slave ]
+  pull_request:
+    branches: [ slave ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.8
+    - name: autopep8
+      id: autopep8
+      uses: peter-evans/autopep8@v1.2.1
+      with:
+        args: --recursive --in-place
+    - name: Fail if autopep8 made changes
+      if: steps.autopep8.outputs.exit-code == 2
+      run: exit 1
