@@ -132,7 +132,7 @@ def 重整(url_list: List[Tuple[str, float]]):
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
-    domains = {netloc(url) for url in urls}|{缩(url) for url in urls}
+    domains = {netloc(url) for url in urls} | {缩(url) for url in urls}
     pool = ThreadPoolExecutor(max_workers=16)
     缓存信息 = {k: v for k, v in zip(domains, pool.map(网站信息.get, domains))}
     a = random.choices(url_list, weights=map(喜欢, url_list), k=min(30000, len(url_list)//5+100))
@@ -184,7 +184,7 @@ def bfs(start, epoch=999999):
             吸过 = set()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     while True:
         bfs(入口)
         time.sleep(5)

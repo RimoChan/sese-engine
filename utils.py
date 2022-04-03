@@ -65,7 +65,7 @@ def 小小清洗(q: 阵, l: int) -> Iterable[Tuple[float, str]]:
     def 好(url: str):
         if url.startswith('https://'):
             url = url[8:]
-        return len(url.rstrip('/').split('/'))==1
+        return len(url.rstrip('/').split('/')) == 1
     y = {}
     for v, url in q:
         s = netloc(url).lower()
@@ -106,7 +106,7 @@ def 坏(url: str) -> float:
 
 
 lang_model = fasttext.load_model('lid.176.ftz')
-def 检测语言(s: str)-> str:
+def 检测语言(s: str) -> str:
     lang = lang_model.predict(s)[0][0]
     assert lang.startswith('__label__')
     return lang[9:]

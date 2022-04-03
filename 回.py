@@ -39,10 +39,10 @@ def 刷新():
     print('好！')
     d = {k: v for k, v in d.items() if v > 0.16}
     d = {k: v for k, v in sorted(d.items())}
-    
+
     q = [v for k, v in d.items() if '/' not in k]
     print(f'繁荣的域名个数: {len(q)}，繁荣的域名总能量: {sum(q)}')
-    
+
     s = json.dumps(d, ensure_ascii=2, indent=2)
     with open(存储位置/'繁荣.json', 'w') as f:
         f.write(s)
