@@ -13,7 +13,7 @@ def _归1化(d):
     return {k: v*倍 for k, v in d.items()}
 
 
-def 繁荣表():
+def 繁荣表() -> dict:
     if not (存储位置/'繁荣.json').is_file():
         return {}
     with open(存储位置/'繁荣.json', encoding='utf8') as f:
@@ -30,9 +30,15 @@ def 繁荣表():
     return d
 
 
-def 调整表():
+def 调整表() -> dict:
     if not (Path('./data')/'调整.yaml').is_file():
         return {}
     with open(Path('./data')/'调整.yaml', encoding='utf8') as f:
-        d = yaml.safe_load(f)
-    return d
+        return yaml.safe_load(f)
+
+
+def 屏蔽词() -> set:
+    path = Path('./data')/'屏蔽词.json'
+    if not path.is_file():
+        return []
+    return {*json.load(open(path, encoding='utf8'))}

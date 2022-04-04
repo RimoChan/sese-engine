@@ -1,6 +1,4 @@
-﻿from waitress import serve
-
-import re
+﻿import re
 import json
 import math
 import heapq
@@ -16,6 +14,7 @@ from typing import Tuple, Optional
 import flask
 import requests
 import Levenshtein
+from waitress import serve
 
 from rimo_utils.计时 import 计时
 from rimo_storage import cache
@@ -37,10 +36,8 @@ app = flask.Flask(__name__)
 
 繁荣表 = 信息.繁荣表()
 调整表 = 信息.调整表()
+屏蔽词 = 信息.屏蔽词()
 网站信息 = 融合之门(存储位置/'网站之门')
-
-with open('./data/屏蔽词.json', encoding='utf8') as f:
-    屏蔽词 = {*json.load(f)}
 
 
 def _荣(url: str):
@@ -53,7 +50,7 @@ def _荣(url: str):
         if s == 0:
             s = l
         else:
-            s = l + (s - l) / 3
+            s = l + math.log((s-l)/2+1)
     return s
 
 
@@ -216,7 +213,8 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
         if y and y[0]:
             title, description, text = y
             if '//zh.wikipedia.org' in url:
-                text = text.replace('维基百科，自由的百科全书', '').replace('跳到导航', '').replace('跳到搜索', '')
+                text = text.replace('维基百科，自由的百科全书', '').replace('跳到导航', '').replace('跳到搜索', '').replace('本條目存在以下問題 ，請協助 改善本條目 或在 討論頁 針對議題發表看法。', '').replace('此條目 可参照 英語維基百科 相應條目来扩充 。', '').replace('此條目 需要补充更多 来源', '').replace('请协助補充多方面 可靠来源 以 改善这篇条目', '').replace('此條目 没有列出任何 参考或来源', '').replace('維基百科所有的內容都應該 可供查證 。', '')
+                text = re.sub(' *（重定向自[^）]*?） *', ' ', text)
             msg = {
                 '标题': title,
                 '描述': 预览(keys, description),
@@ -240,7 +238,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
             msg['描述'] = description[:80]
             msg['文本'] = text[:80]
         res.append({
-            '分数': {'终': v[0], '相关': v[1], '荣': v[2], '不喜欢': v[3], '语种': v[4], '标题重复': v[5], '调整': v[6]},
+            '分数': {'最终分数': v[0], '与搜索词相关': v[1], '繁荣的网站': v[2], 'URL格式惩罚': v[3], '语种': v[4], '标题重复': v[5], '调整': v[6]},
             '网址': unquote(url),
             '信息': msg,
             '相关性': {k: 记录[url].get(k, 0) for k in keys},
@@ -266,16 +264,15 @@ def _预览(k, text, limit) -> str:
                 best = (bs, i)
     if best[0] == 0:
         return ''
+    b1 = best[1]
+    if b1 < 窗口长:
+        a, b = 0, 窗口长+12
     else:
-        b1 = best[1]
-        if b1 < 窗口长:
-            a, b = 0, 窗口长+12
-        else:
-            a, b = b1-窗口长, b1+12
-        r = ''.join(c[a: b])
-        if len(c) > b:
-            r += '...'
-        return r
+        a, b = b1-窗口长, b1+12
+    r = ''.join(c[a: b])
+    if len(c) > b:
+        r += '...'
+    return r
 
 
 @cache.disk_cache(path=存储位置/'缓存摘要', serialize='json')
@@ -292,7 +289,6 @@ def 缓存摘要(url: str):
         return None
     try:
         return _缓存摘要(url)
-        requests.exceptions.TooManyRedirects
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
         print(f'获取「{url}」时网络不好！')
         threading.Thread(target=lambda: _缓存摘要(url), name='slow').start()
