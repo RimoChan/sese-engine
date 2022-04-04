@@ -157,8 +157,6 @@ def bfs(start, epoch=999999):
     pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
     for _ in range(epoch):
-        if not q:
-            break
         for i in q:
             吸过.add(i)
         新q = []
@@ -167,6 +165,9 @@ def bfs(start, epoch=999999):
             for url in href:
                 if url not in 吸过:
                     新q.append((url, 1/n))
+        if not 新q:
+            print('队列空了，坏！')
+            return
         上l = len(新q)
         q = 重整(新q)
 
