@@ -4,10 +4,9 @@ from urllib.parse import urlparse
 from typing import Tuple, List
 
 import lxml.html
+import tldextract
 
 from 虫 import 爬
-
-import tldextract
 
 
 def 缩(url):
@@ -16,7 +15,7 @@ def 缩(url):
 
 
 def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str]:
-    if t:=爬(url, **d):
+    if t := 爬(url, **d):
         raw, 真url = t
     else:
         return '', '', '', [], url
@@ -65,7 +64,7 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str]:
         for x in r:
             dfs(x)
         if r.tail:
-            if t:=re.sub('\s+', ' ', r.tail).strip():
+            if t := re.sub('\s+', ' ', r.tail).strip():
                 text.append(t)
     dfs(root)
     return title, description, ' '.join(text), href, 真url

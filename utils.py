@@ -1,6 +1,5 @@
 import re
 import json
-import logging
 import threading
 from functools import lru_cache
 from urllib.parse import urlparse

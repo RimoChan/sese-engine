@@ -1,10 +1,8 @@
-import orjson
 import struct
-import base64
 import hashlib
-import urllib.parse
 from typing import MutableMapping
 
+import orjson
 import brotli
 from rimo_storage import 超dict
 
@@ -32,19 +30,18 @@ def _load1(b: bytes) -> 阵:
 
 
 def _load2(b: bytes) -> 阵:
-    assert b[:6]==b'yn0001', '版本不对'
+    assert b[:6] == b'yn0001', '版本不对'
     n = struct.unpack('i', b[6:10])[0]
     吸0 = struct.unpack(f'{n}e', b[10:10+n*2])
     吸1 = orjson.loads(b[10+n*2:])
-    assert len(吸0)==len(吸1), '数据不完整'
+    assert len(吸0) == len(吸1), '数据不完整'
     return [*zip(吸0, 吸1)]
 
 
 def load(b: bytes) -> 阵:
     if b.startswith(b'yn0001'):
         return _load2(b)
-    else:
-        return _load1(b)
+    return _load1(b)
 
 
 empty = dump2([])
@@ -78,7 +75,7 @@ class 融合之门(MutableMapping):
             self.d[真k] = [(k, v)]
         else:
             原 = self.d[真k]
-            for i, (kk, vv) in enumerate(原):
+            for i, (kk, _) in enumerate(原):
                 if kk == k:
                     原[i] = kk, v
                     break
