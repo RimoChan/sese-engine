@@ -1,4 +1,5 @@
 ﻿import re
+import time
 import json
 import math
 import heapq
@@ -9,7 +10,7 @@ from fnmatch import fnmatch
 from itertools import islice
 from functools import lru_cache
 from urllib.parse import unquote
-from typing import Tuple, Optional
+from typing import List, Tuple, Optional, Iterator
 
 import flask
 import requests
@@ -70,7 +71,8 @@ def test():
     )
 
 
-_息 = lru_cache(maxsize=4096)(lambda b: 网站信息.get(b, {}))
+_息 = lru_cache(maxsize=4096)(lambda b, _: 网站信息.get(b, {}))
+息 = lambda b: _息(b, int(time.time())//(3600*24))
 
 
 def _search():
@@ -130,8 +132,12 @@ def 重排序(q):
             heapq.heappush(堆, (-x[0][0]*倍[k], x, k))
 
 
-def _重复性(l):
-    def q(a, b):
+def _连续性(s: str, keys: List[str]) -> int:
+    return sum([(a+b in s) for a, b in zip(keys[:-1], keys[1:])])
+
+
+def _重复性(l: List[str]) -> Iterator[int]:
+    def q(a: str, b: str):
         if not a or not b:
             return 0
         return 1 - Levenshtein.distance(a, b) / max(len(a), len(b))
@@ -172,33 +178,42 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
                 if vp > 0.1:
                     vp = 0.1 + (vp - 0.1) / 2.2
                 相关 *= vp
-            d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, 不喜欢, 1, 1, 调整
+            d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, (1-不喜欢), 1, 1, 调整, 1, 1
     with 计时(f'初排序{keys}'):
         q = sorted([(v, k) for k, v in d.items()], reverse=True)
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=128)
-    with 计时(f'语种权重{keys}'):
+    with 计时(f'网站信息{keys}'):
         def r(item):
             v, k = item
-            语种 = _息(netloc(k)).get('语种', {})
+            网站 = 息(netloc(k))
+            语种 = 网站.get('语种', {})
             中文度 = 语种.get('zh', 0)
             怪文度 = sum(语种.values()) - 语种.get('zh', 0) - 语种.get('en', 0) - 语种.get('ja', 0)
-            倍 = 1 + 中文度*0.5 - 怪文度*0.5
-            vv = v[0]*倍, v[1], v[2], v[3], 倍, v[5], v[6]
+            语种倍 = 1 + 中文度*0.5 - 怪文度*0.5
+            时间 = 网站.get('最后访问时间', 1648300000)
+            过去天数 = (int(time.time()) - 时间) // (3600*24)
+            过去天数 = max(0, min(180, 过去天数-1))
+            时间倍 = 0.996 ** 过去天数
+            vv = v[0]*语种倍*时间倍, v[1], v[2], v[3], 语种倍, v[5], v[6], 时间倍, v[8]
             return (vv, k)
         q[:128] = [*pool.map(r, q[:128])]
+    q.sort(reverse=True)
     with 计时(f'重复性{keys}'):
-        def r2(v, k, h):
+        def r2(v, k, h, x):
             if h < 0.5:
-                倍 = 1
+                重复倍 = 1
             else:
-                倍 = 1-(h-0.5)
-            vv = v[0]*倍, v[1], v[2], v[3], v[4], 倍, v[6]
+                重复倍 = 1-(h-0.5)
+            连续倍 = 1.3 ** x
+            vv = v[0]*重复倍*连续倍, v[1], v[2], v[3], v[4], 重复倍, v[6], v[7], 连续倍
             return vv, k
         def rf(item):
             v, url = item
             return (门.get(url) or [''])[0]
-        复 = _重复性([*pool.map(rf, q[:64])])
-        q[:64] = [r2(v, k, h) for (v, k), h in zip(q[:64], 复)]
+        题 = [*pool.map(rf, q[:64])]
+        续 = [_连续性(s, keys) for s in 题]
+        复 = _重复性(题)
+        q[:80] = [r2(v, k, h, x) for (v, k), h, x in zip(q[:80], 复, 续)]
     with 计时(f'重排序{keys}'):
         qq = [*islice(重排序(q), sli.start, sli.stop, sli.step)]
     return qq, 记录, len(d)
@@ -237,8 +252,10 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
         if msg and (not msg['描述'] and not msg['文本']):
             msg['描述'] = description[:80]
             msg['文本'] = text[:80]
+        原因 = {'内容与关键词相关': v[1], '网站繁荣度': v[2], 'URL格式': v[3], '域名的语种': v[4], '标题与其他结果重复': v[5], '对域名的预调整': v[6], '我们对这个域名的认知过期了': v[7], '连续的关键词': v[8]}
         res.append({
-            '分数': {'最终分数': v[0], '与搜索词相关': v[1], '繁荣的网站': v[2], 'URL格式惩罚': v[3], '语种': v[4], '标题重复': v[5], '调整': v[6]},
+            '分数': v[0],
+            '原因': {k: v for k, v in 原因.items() if not 0.999 < v < 1.001},
             '网址': unquote(url),
             '信息': msg,
             '相关性': {k: 记录[url].get(k, 0) for k in keys},

@@ -65,6 +65,7 @@ def 求质量和特征(url: str) -> Tuple[float, str]:
     '语种': {},
     '链接': [],
     '特征': None,
+    '最后访问时间': 0,
 }
 
 
@@ -78,6 +79,7 @@ def 超吸(url: str) -> List[str]:
 
         息 = 网站信息.get(b) or copy.deepcopy(默认息)
         息['访问次数'] += 1
+        息['最后访问时间'] = int(time.time())
         if 息['质量'] is None or 息.get('特征') is None:
             息['质量'], 息['特征'] = 求质量和特征(f'https://{b}/')
         if 息['访问次数'] < 10 or random.random() < 0.1:
