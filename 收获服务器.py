@@ -1,8 +1,8 @@
 ﻿import os
+import random
 import logging
 import threading
 from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor
 from typing import Tuple
 
 import flask
@@ -34,6 +34,24 @@ def 消重(q: 阵) -> 阵:
         if url in 有:
             continue
         有.add(url)
+        qq.append((v, url))
+    return qq
+
+
+def 降解(q: 阵) -> 阵:
+    qq = []
+    有 = set()
+    for v, url in sorted(q, key=lambda x: -len(x[1])):
+        k = url
+        if k.startswith('https://'):
+            k = k[8:]
+        elif k.startswith('http://'):
+            k = k[7:]
+        if k.endswith('/'):
+            k = k[:-1]
+        if k in 有:
+            continue
+        有.add(k)
         qq.append((v, url))
     return qq
 
@@ -83,8 +101,12 @@ def 洗(item) -> Tuple[int, str]:
         if len(v) < 3:
             return 0, '丢弃'
     z = 消重(tuple(v) + tuple(原v))
-    if len(z) > 单键最多url*1.1:
+    if random.random() < 0.1:
+        z = 降解(z)
+    if len(z) > 单键最多url*1.1 or random.random() < 0.1:
         z = 小清洗(sorted(z, reverse=True), 单键最多相同域名url)[:单键最多url]
+    if len(z) > 50:
+        z = sorted(z, reverse=True, key=lambda x:x[1])  # 让压缩算法高兴
     df[k] = z
     return len(z) - len(原v), '新增' if not 原v else '变长'
 
@@ -100,7 +122,7 @@ def 大清洗():
         for i, 状态 in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
             总 += i
             状态统计[状态] = 状态统计.get(状态, 0) + 1
-        print(f'\n\n\n清洗好了。\n总共增加了{总}行。\n键状态: {状态统计}')
+        print(f'\n\n\n大清洗好了。\n增加了{总}行。\n键状态: {状态统计}')
     except Exception as e:
         print('完蛋了！')
         logging.exception(e)
