@@ -112,6 +112,7 @@ def 检测语言(s: str) -> str:
 
 
 def 分解(url: str):
+    url = url.lower()
     if url.startswith('https://'):
         url = url[8:]
     elif url.startswith('http://'):
