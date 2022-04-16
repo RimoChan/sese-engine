@@ -25,7 +25,7 @@ import 文
 import 信息
 from 存储 import 索引空间, 融合之门
 from 分析 import 分
-from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置
+from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置, 权重每日衰减, 语种权重, 连续关键词权重, 反向链接权重
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 threading.excepthook = lambda x: print(f'{x.thread} 遇到了exception: {repr(x.exc_value)}')
@@ -172,7 +172,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             else:
                 候选, locs = zip(*z)
     with 计时(f'荣{keys}'):
-        荣s = [1 + _荣(url) for url, vs in 候选]
+        荣s = [1 + _荣(url)*反向链接权重 for url, vs in 候选]
     with 计时(f'初重{keys}'):
         for (url, vs), loc, 荣 in zip(候选, locs, 荣s):
             调整 = 调整表.get(loc, 1)
@@ -196,11 +196,11 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             语种 = 网站.get('语种', {})
             中文度 = 语种.get('zh', 0)
             怪文度 = sum(语种.values()) - 语种.get('zh', 0) - 语种.get('en', 0) - 语种.get('ja', 0)
-            语种倍 = 1 + 中文度*0.5 - 怪文度*0.5
+            语种倍 = 1 + 中文度*语种权重 - 怪文度*语种权重
             时间 = 网站.get('最后访问时间', 1648300000)
             过去天数 = (int(time.time()) - 时间) // (3600*24)
             过去天数 = max(0, min(180, 过去天数-1))
-            时间倍 = 0.996 ** 过去天数
+            时间倍 = 权重每日衰减 ** 过去天数
             vv = v[0]*语种倍*时间倍, v[1], v[2], v[3], 语种倍, v[5], v[6], 时间倍, v[8]
             return (vv, k)
         q[:128] = [*pool.map(r, q[:128])]
@@ -211,7 +211,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
                 重复倍 = 1
             else:
                 重复倍 = 1-(h-0.5)
-            连续倍 = 1.3 ** x
+            连续倍 = 连续关键词权重 ** x
             vv = v[0]*重复倍*连续倍, v[1], v[2], v[3], v[4], 重复倍, v[6], v[7], 连续倍
             return vv, k
         def rf(item):
