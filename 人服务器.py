@@ -162,13 +162,20 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             for v, url in l:
                 记录.setdefault(url, {})[key] = v
     d = {}
+    with 计时(f'取域名{keys}'):
+        候选 = [*记录.items()]
+        locs = [netloc(url) for url, vs in 候选]
+        if site:
+            z = [(item, loc) for item, loc in zip(候选, locs) if fnmatch(loc, site) or fnmatch(loc, '*.'+site)]
+            if not z:
+                候选, locs = [], []
+            else:
+                候选, locs = zip(*z)
+    with 计时(f'荣{keys}'):
+        荣s = [1 + _荣(url) for url, vs in 候选]
     with 计时(f'初重{keys}'):
-        for url, vs in 记录.items():
-            loc = netloc(url)
-            if site and not (fnmatch(loc, site) or fnmatch(loc, '*.'+site)):
-                continue
+        for (url, vs), loc, 荣 in zip(候选, locs, 荣s):
             调整 = 调整表.get(loc, 1)
-            荣 = 1+_荣(url)
             不喜欢 = 坏(url)
             相关 = 1
             for key in keys:
@@ -252,7 +259,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
         if msg and (not msg['描述'] and not msg['文本']):
             msg['描述'] = description[:80]
             msg['文本'] = text[:80]
-        原因 = {'内容与关键词相关': v[1], '网站繁荣度': v[2], 'URL格式': v[3], '域名的语种': v[4], '标题与其他结果重复': v[5], '对域名的预调整': v[6], '我们对这个域名的认知过期了': v[7], '连续的关键词': v[8]}
+        原因 = {'内容与关键词相关': v[1], '反向链接加成': v[2], 'URL格式': v[3], '域名的语种': v[4], '标题与其他结果重复': v[5], '对域名的预调整': v[6], '我们对这个域名的认知过期了': v[7], '连续的关键词': v[8]}
         res.append({
             '分数': v[0],
             '原因': {k: v for k, v in 原因.items() if not 0.999 < v < 1.001},
