@@ -16,7 +16,7 @@ import 分析
 import 信息
 from 文 import 缩, 摘要
 from 存储 import 融合之门
-from 配置 import 爬取线程数, 单网页最多关键词, 入口, 存储位置
+from 配置 import 爬取线程数, 爬取集中度, 单网页最多关键词, 入口, 存储位置
 from utils import tqdm_exception_logger, 坏, 检测语言, netloc
 
 
@@ -42,7 +42,7 @@ def 摘(url) -> Tuple[str, str, str, List[str], str]:
     return r
 
 
-def 求质量和特征(url: str) -> Tuple[float, str]:
+def 求质量和特征(url: str) -> Tuple[float, str, List[str]]:
     title, description, text = 摘(url)[:3]
     s = 1.0
     if not title:
@@ -56,7 +56,8 @@ def 求质量和特征(url: str) -> Tuple[float, str]:
     z = ' '.join([title, description, text])
     e = z.encode('utf8')
     特征 = len(z), hashlib.md5(e).hexdigest(),  sum([*e])
-    return s, 特征
+    关键词 = [x[0] for x in sorted(分析.龙('', '', text), key=lambda x:-x[1])[:40]]
+    return s, 特征, 关键词
 
 
 默认息 = {
@@ -65,6 +66,7 @@ def 求质量和特征(url: str) -> Tuple[float, str]:
     '语种': {},
     '链接': [],
     '特征': None,
+    '关键词': None,
     '最后访问时间': 0,
 }
 
@@ -80,8 +82,8 @@ def 超吸(url: str) -> List[str]:
         息 = 网站信息.get(b) or copy.deepcopy(默认息)
         息['访问次数'] += 1
         息['最后访问时间'] = int(time.time())
-        if 息['质量'] is None or 息.get('特征') is None:
-            息['质量'], 息['特征'] = 求质量和特征(f'https://{b}/')
+        if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None:
+            息['质量'], 息['特征'], 息['关键词'] = 求质量和特征(f'https://{b}/')
         if 息['访问次数'] < 10 or random.random() < 0.1:
             语种 = 检测语言(' '.join((title, description, text)))
             td = {k: v*0.9 for k, v in 息['语种'].items()}
@@ -95,8 +97,8 @@ def 超吸(url: str) -> List[str]:
 
         if 超b != b:
             超息 = 网站信息.get(超b) or copy.deepcopy(默认息)
-            if 超息['质量'] is None or 超息.get('特征') is None:
-                超息['质量'], 超息['特征'] = 求质量和特征(f'https://{超b}/')
+            if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None:
+                超息['质量'], 超息['特征'], 超息['关键词'] = 求质量和特征(f'https://{超b}/')
             超息['访问次数'] += 0.2
             网站信息[超b] = 超息
         return href
@@ -137,14 +139,14 @@ def 重整(url_list: List[Tuple[str, float]]):
     domains = {netloc(url) for url in urls} | {缩(url) for url in urls}
     pool = ThreadPoolExecutor(max_workers=16)
     缓存信息 = {k: v for k, v in zip(domains, pool.map(网站信息.get, domains))}
-    a = random.choices(url_list, weights=map(喜欢, url_list), k=min(30000, len(url_list)//5+100))
+    a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//5+100))
     a = {url for url, w in a}
     d = {}
     for url in a:
         d.setdefault(netloc(url), []).append(url)
     res = []
     for v in d.values():
-        sn = 1 + int(len(v)**0.7)
+        sn = 1 + int(len(v)**爬取集中度)
         res += v[:sn]
     random.shuffle(res)
     return res
