@@ -88,7 +88,7 @@ def l():
         内存行数 = sum([len(临时df[k]) for k in [*临时df]])
         if 内存行数 > 1000_0000:
             偏执 = 0
-            大清洗()
+            大明洗()
             os._exit(0)   # 我也想不通这就100行代码居然有内存泄漏，我也不知道漏在哪里了，先靠重启解决吧
     大清.release()
     return 'ok'
@@ -111,7 +111,7 @@ def 洗(item) -> Tuple[int, str]:
     return len(z) - len(原v), '新增' if not 原v else '变长'
 
 
-def 大清洗():
+def 大明洗():
     global 临时df, df
     pool = 好ThreadPoolExecutor(max_workers=8)
     try:
@@ -119,10 +119,10 @@ def 大清洗():
         临时df = {}
         总 = 0
         状态统计 = {}
-        for i, 状态 in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
+        for i, 状态 in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大明洗', total=len(_临时df)):
             总 += i
             状态统计[状态] = 状态统计.get(状态, 0) + 1
-        print(f'\n\n\n大清洗好了。\n增加了{总}行。\n键状态: {状态统计}')
+        print(f'\n\n\n大明洗好了。\n增加了{总}行。\n键状态: {状态统计}')
     except Exception as e:
         print('完蛋了！')
         logging.exception(e)
