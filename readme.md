@@ -38,9 +38,9 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
     pip install -r requirements.txt
     ```
 
-3. 运行 `启动.cmd`
+3. 运行 `启动.cmd` 或者 `启动.sh`
 
-    你肯定很奇怪为什么不是`.sh`，这是因为我买的服务器是windows的。
+    你可能会很奇怪为什么之前没有`.sh`，这是因为我买的服务器是windows的。
 
 
 这样你的搜索引擎服务应该就可以用了，你可以 `curl http://127.0.0.1:4950/search?q=test` 试一下。
