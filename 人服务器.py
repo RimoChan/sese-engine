@@ -259,6 +259,8 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
         if msg and (not msg['描述'] and not msg['文本']):
             msg['描述'] = description[:80]
             msg['文本'] = text[:80]
+        if msg and (msg['文本'] and msg['描述'] == msg['标题']):
+            msg['描述'] = ''
         原因 = {'内容与关键词相关': v[1], '反向链接加成': v[2], 'URL格式': v[3], '域名的语种': v[4], '标题与其他结果重复': v[5], '对域名的预调整': v[6], '我们对这个域名的认知过期了': v[7], '连续的关键词': v[8]}
         res.append({
             '分数': v[0],
