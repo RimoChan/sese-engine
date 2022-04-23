@@ -47,6 +47,7 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
 
 然后前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)。前端怎么部署呢，去看看云游君怎么说吧。
 
+如果你想用刀客部署的话，可以参照: [xiongnemo/sese-engine-docker](https://github.com/xiongnemo/sese-engine-docker)。
 
 ## 代价
 
