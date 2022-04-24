@@ -95,7 +95,7 @@ def tqdm_exception_logger(e):
     try:
         f = e.__traceback__.tb_frame.f_globals["__file__"]
         l = e.__traceback__.tb_lineno
-        s = f'{s}[{f}:{l}]'
+        s = f'[{f}:{l}]{s}'
     except Exception:
         None
     if s not in _tl:
