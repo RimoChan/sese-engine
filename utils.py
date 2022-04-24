@@ -106,7 +106,7 @@ def 坏(url: str) -> float:
 
 lang_model = fasttext.load_model('lid.176.ftz')
 def 检测语言(s: str) -> str:
-    lang = lang_model.predict(s)[0][0]
+    lang = lang_model.predict(s.replace('\n', ''))[0][0]
     assert lang.startswith('__label__')
     return lang[9:]
 
