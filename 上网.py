@@ -6,7 +6,7 @@ import random
 import hashlib
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple
+from typing import List, Tuple, Iterable, Callable
 
 import requests
 from tqdm import tqdm
@@ -42,16 +42,21 @@ def 摘(url) -> Tuple[str, str, str, List[str], str]:
     return r
 
 
-def 求质量和特征(url: str) -> Tuple[float, str, List[str]]:
-    title, description, text = 摘(url)[:3]
+def 求质量和特征(域名: str) -> Tuple[float, str, List[str]]:
+    try:
+        title, description, text = 摘(f'https://{域名}/')[:3]
+        https可用 = True
+    except Exception:
+        title, description, text = 摘(f'http://{域名}/')[:3]
+        https可用 = False
     s = 1.0
     if not title:
         s *= 0.2
     if not description:
         s *= 0.7
-    if not url.startswith('https'):
+    if not https可用:
         s *= 0.8
-    if 'm' in url.split('.'):
+    if 'm' in 域名.split('.'):
         s *= 0.6
     z = ' '.join([title, description, text])
     e = z.encode('utf8')
@@ -82,23 +87,32 @@ def 超吸(url: str) -> List[str]:
         息 = 网站信息.get(b) or copy.deepcopy(默认息)
         息['访问次数'] += 1
         息['最后访问时间'] = int(time.time())
-        if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None:
-            息['质量'], 息['特征'], 息['关键词'] = 求质量和特征(f'https://{b}/')
-        if 息['访问次数'] < 10 or random.random() < 0.1:
-            语种 = 检测语言(' '.join((title, description, text)))
-            td = {k: v*0.9 for k, v in 息['语种'].items()}
-            td[语种] = td.get(语种, 0) + 0.1
-            息['语种'] = td
-            外href = [h for h in href if 缩(h) != 超b]
-            息['链接'] += random.sample(外href, min(10, len(外href)))
-            if len(息['链接']) > 250:
-                息['链接'] = random.sample(息['链接'], 200)
+        try:
+            if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None:
+                息['质量'], 息['特征'], 息['关键词'] = 求质量和特征(b)
+        except Exception as e:
+            tqdm_exception_logger(e)
+        try:
+            if 息['访问次数'] < 10 or random.random() < 0.1:
+                语种 = 检测语言(' '.join((title, description, text)))
+                td = {k: v*0.9 for k, v in 息['语种'].items()}
+                td[语种] = td.get(语种, 0) + 0.1
+                息['语种'] = td
+                外href = [h for h in href if 缩(h) != 超b]
+                息['链接'] += random.sample(外href, min(10, len(外href)))
+                if len(息['链接']) > 250:
+                    息['链接'] = random.sample(息['链接'], 200)
+        except Exception as e:
+            tqdm_exception_logger(e)
         网站信息[b] = 息
 
         if 超b != b:
             超息 = 网站信息.get(超b) or copy.deepcopy(默认息)
-            if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None:
-                超息['质量'], 超息['特征'], 超息['关键词'] = 求质量和特征(f'https://{超b}/')
+            try:
+                if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None:
+                    超息['质量'], 超息['特征'], 超息['关键词'] = 求质量和特征(超b)
+            except Exception as e:
+                tqdm_exception_logger(e)
             超息['访问次数'] += 0.2
             网站信息[超b] = 超息
         return href
@@ -106,6 +120,20 @@ def 超吸(url: str) -> List[str]:
         tqdm_exception_logger(e)
         time.sleep(0.25)
         return []
+
+
+def 纯化(f: Callable, a: Iterable[str], k: float) -> List[str]:
+    d = {}
+    a = [*a]
+    random.shuffle(a)
+    for url in a:
+        d.setdefault(f(url), []).append(url)
+    res = []
+    for v in d.values():
+        sn = 1 + int(len(v)**k)
+        res += v[:sn]
+    random.shuffle(res)
+    return res
 
 
 def 重整(url_list: List[Tuple[str, float]]):
@@ -132,7 +160,8 @@ def 重整(url_list: List[Tuple[str, float]]):
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(30, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 2
-        return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
+        协议 = 1 - 0.5 * url.startswith('http://')
+        return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣 * 协议
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
@@ -141,14 +170,7 @@ def 重整(url_list: List[Tuple[str, float]]):
     缓存信息 = {k: v for k, v in zip(domains, pool.map(网站信息.get, domains))}
     a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//5+100))
     a = {url for url, w in a}
-    d = {}
-    for url in a:
-        d.setdefault(netloc(url), []).append(url)
-    res = []
-    for v in d.values():
-        sn = 1 + int(len(v)**爬取集中度)
-        res += v[:sn]
-    random.shuffle(res)
+    res = 纯化(缩, a, 爬取集中度)
     return res
 
 
@@ -176,11 +198,14 @@ def bfs(start, epoch=999999):
         q = 重整(新q)
 
         c = Counter([netloc(x) for x in q])
+        超c = Counter([缩(x) for x in q])
         打点.append({
             '上次抓到的长度': 上l,
             'url个数': len(q),
             '域名个数': len(c),
-            '目标': dict(c.most_common(20)),
+            '一级域名个数': len(超c),
+            '各个域名的url个数': dict(c.most_common(20)),
+            '各个一级域名的url个数': dict(超c.most_common(20)),
         })
         打点 = 打点[-50:]
         with open('打点.json', 'w', encoding='utf8') as f:
