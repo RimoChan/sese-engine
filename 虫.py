@@ -3,7 +3,7 @@ from functools import lru_cache
 from urllib.parse import urlparse
 from typing import Optional, Tuple
 
-from reppy.robots import Robots
+from reppy.robots import Robots, AllowNone
 import requests
 
 from 配置 import 爬虫的名字
@@ -19,6 +19,8 @@ class LoliError(Exception):
 @lru_cache(maxsize=512)
 def 萝卜(url):
     rp = Robots.fetch(url+'/robots.txt', timeout=5, headers={'user-agent': 爬虫的名字})
+    if isinstance(rp, AllowNone):
+        rp = Robots.fetch(url+'/robots.txt', timeout=5)
     return rp
 
 
@@ -52,6 +54,8 @@ def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, dict]:
     resp = requests.get(url, timeout=timeout, headers={'user-agent': 爬虫的名字}, stream=True)
     if resp.status_code == 404:
         raise LoliError('没有！没有！')
+    if 400 <= resp.status_code < 500:
+        resp = requests.get(url, timeout=timeout/2, stream=True)
     resp.raise_for_status()
     if 'text/html' not in resp.headers.get('Content-Type', ''):
         raise LoliError(f'类型{resp.headers.get("Content-Type")}不行！')
