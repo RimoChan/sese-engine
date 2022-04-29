@@ -62,7 +62,7 @@ def 低(k: str) -> float:
     if len(l) < 单键最多url:
         return -1
     else:
-        return sorted([v for v, url in l], reverse=True)[单键最多url-1]
+        return min(0.1, sorted([v for v, url in l], reverse=True)[单键最多url-1])
 
 
 @app.route('/l', methods=['POST'])
@@ -101,10 +101,14 @@ def 洗(item) -> Tuple[int, str]:
         if len(v) < 3:
             return 0, '丢弃'
     z = 消重(tuple(v) + tuple(原v))
-    if random.random() < 0.1:
+    if random.random() < 0.05:
         z = 降解(z)
-    if len(z) > 单键最多url*1.1 or random.random() < 0.1:
-        z = 小清洗(sorted(z, reverse=True), 单键最多相同域名url)[:单键最多url]
+    if len(z) > 单键最多url*1.1 or random.random() < 0.05:
+        zt = 小清洗(sorted(z, reverse=True), 单键最多相同域名url)
+        z1 = zt[:单键最多url]
+        z2 = [i for i in zt[单键最多url:] if i[0] > 0.1]
+        z2 = 小清洗(z2, 1)[:单键最多url]
+        z = z1 + z2
     if len(z) > 50:
         z = sorted(z, reverse=True, key=lambda x:x[1])  # 让压缩算法高兴
     df[k] = z
