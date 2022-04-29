@@ -12,7 +12,7 @@ from 类 import 阵
 from 存储 import 索引空间
 from utils import netloc, json_loads, 小清洗, 好ThreadPoolExecutor
 
-from 配置 import 单键最多url, 单键最多相同域名url, 存储位置
+from 配置 import 单键最多url, 单键最多相同域名url, 存储位置, 大清洗行数, 新增键需url数
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
@@ -84,9 +84,9 @@ def l():
     面板['内存键数'].refresh()
     大清.acquire()
     偏执 += 1
-    if 偏执 % 10000 == 9999:
+    if (偏执+1) % 10000 == 0:
         内存行数 = sum([len(临时df[k]) for k in [*临时df]])
-        if 内存行数 > 1000_0000:
+        if 内存行数 > 大清洗行数:
             偏执 = 0
             大清洗()
             os._exit(0)   # 我也想不通这就100行代码居然有内存泄漏，我也不知道漏在哪里了，先靠重启解决吧
@@ -98,7 +98,7 @@ def 洗(item) -> Tuple[int, str]:
     k, v = item
     原v = df.get(k, [])
     if not 原v:
-        if len(v) < 3:
+        if len(v) < 新增键需url数:
             return 0, '丢弃'
     z = 消重(tuple(v) + tuple(原v))
     if random.random() < 0.05:
