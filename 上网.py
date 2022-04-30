@@ -160,8 +160,7 @@ def 重整(url_list: List[Tuple[str, float]]):
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(30, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 2
-        协议 = 1 - 0.5 * url.startswith('http://')
-        return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣 * 协议
+        return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]

@@ -104,11 +104,13 @@ def tqdm_exception_logger(e):
 
 
 def 坏(url: str) -> float:
-    s = max(0, (len(url)-30)/250)
+    s = max(0, (len(url)-30)/200)
     if '.htm' in url or '.php' in url:
-        s += 0.3
+        s += (1-s) * 0.3
     if len(url.rstrip('/').split('/')) > 3:
-        s += 0.2
+        s += (1-s) * 0.2
+    if url.startswith('http://'):
+        s += (1-s) * 0.3
     s = min(s, 0.9)
     return s
 
