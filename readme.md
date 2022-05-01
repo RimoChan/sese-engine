@@ -38,24 +38,33 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
     pip install -r requirements.txt
     ```
 
-3. 运行 `启动.cmd` 或者 `启动.sh`
-
-    你可能会很奇怪为什么之前没有`.sh`，这是因为我买的服务器是windows的。
+3. 运行启动脚本
+    
+    搜索引擎在windows和linux上都可以运行，所以有两个可选的启动脚本 `启动.cmd` 和 `启动.sh`。
 
 
 这样你的搜索引擎服务应该就可以用了，你可以 `curl http://127.0.0.1:4950/search?q=test` 试一下。
 
 然后前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)。前端怎么部署呢，去看看云游君怎么说吧。
 
-如果你想用刀客部署的话，可以参照: [xiongnemo/sese-engine-docker](https://github.com/xiongnemo/sese-engine-docker)。
+如果你想用docker部署的话，也可以参照: [xiongnemo/sese-engine-docker](https://github.com/xiongnemo/sese-engine-docker)。
+
 
 ## 代价
 
 sese-engine的消耗不大，一个便宜的服务器或者树莓派就够用了。
 
-默认配置下，sese-engine的爬虫大约需要1\~2个CPU和1\~2G的内存，搜索服务几乎没有消耗。
+默认配置下，sese-engine的爬虫大约需要1\~2个CPU和1\~2G的内存，搜索服务几乎没有消耗。如果你不想占用太多服务器资源，也可以根据 `配置.py` 里的注释调整各种类资源的使用量。
 
-此外，需要的硬盘空间会缓慢增长，尽管它会增长得越来越慢但并没有上界……所以最好给树莓派插一个移动硬盘。
+推荐的服务器配置如下: 
+
+- 2核CPU
+
+- 4G内存
+
+- 128G硬盘
+
+- 5Mbps带宽
 
 
 ## 赞助
