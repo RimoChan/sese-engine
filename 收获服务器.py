@@ -12,7 +12,7 @@ from 类 import 阵
 from 存储 import 索引空间
 from utils import netloc, json_loads, 小清洗, 好ThreadPoolExecutor
 
-from 配置 import 单键最多url, 单键最多相同域名url, 存储位置, 大清洗行数, 新增键需url数
+from 配置 import 单键最多url, 单键最多相同域名url, 存储位置, 大清洗行数, 新增键需url数, 单键最多新增url
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
@@ -109,10 +109,23 @@ def 洗(item) -> Tuple[int, str]:
         z2 = [i for i in zt[单键最多url:] if i[0] > 0.1]
         z2 = 小清洗(z2, 1)[:单键最多url]
         z = z1 + z2
-    if len(z) > 50:
-        z = sorted(z, reverse=True, key=lambda x:x[1])  # 让压缩算法高兴
+    上限 = len(原v) + 单键最多新增url
+    if len(z) > 上限:
+        z = sorted(z, reverse=True)[:上限]
+    if len(z) > 30:
+        z = sorted(z, reverse=True, key=lambda x: x[1])  # 让压缩算法高兴
     df[k] = z
-    return len(z) - len(原v), '新增' if not 原v else '变长'
+    diff = len(z) - len(原v)
+    状态 = '?'
+    if not 原v:
+        状态 = '新增'
+    elif diff > 0:
+        状态 = '变长'
+    elif diff == 0:
+        状态 = '不变'
+    elif diff < 0:
+        状态 = '变短'
+    return diff, 状态
 
 
 def 大清洗():
@@ -121,12 +134,12 @@ def 大清洗():
     try:
         _临时df = 临时df
         临时df = {}
-        总 = 0
         状态统计 = {}
+        状态值统计 = {}
         for i, 状态 in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
-            总 += i
             状态统计[状态] = 状态统计.get(状态, 0) + 1
-        print(f'\n\n\n大清洗好了。\n增加了{总}行。\n键状态: {状态统计}')
+            状态值统计[状态] = 状态值统计.get(状态, 0) + i
+        print(f'\n\n\n\n大清洗好了。\n增加了{sum(状态值统计.values())}行。\n键状态: {状态统计}\n键状态值: {状态值统计}')
     except Exception as e:
         print('完蛋了！')
         logging.exception(e)
