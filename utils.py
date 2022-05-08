@@ -8,7 +8,6 @@ from typing import Iterable, Tuple
 
 from tqdm import tqdm
 import jieba as jiba
-import fasttext
 
 from 类 import 阵
 
@@ -115,8 +114,12 @@ def 坏(url: str) -> float:
     return s
 
 
-lang_model = fasttext.load_model('lid.176.ftz')
+_lang_model = None
 def 检测语言(s: str) -> str:
+    global _lang_model
+    if not _lang_model:
+        import fasttext
+        _lang_model = fasttext.load_model('lid.176.ftz')
     lang = lang_model.predict(s.replace('\n', ''))[0][0]
     assert lang.startswith('__label__')
     return lang[9:]
