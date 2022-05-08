@@ -6,11 +6,11 @@ import random
 import hashlib
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, Iterable, Callable
+from typing import List, Tuple, Iterable, Callable, Dict
 
 import requests
+import tldextract
 from tqdm import tqdm
-from rimo_utils.计时 import 计时
 
 import 分析
 import 信息
@@ -28,11 +28,19 @@ from utils import tqdm_exception_logger, 坏, 检测语言, netloc
 网站信息 = 融合之门(存储位置/'网站之门')
 
 
-def 摘(url) -> Tuple[str, str, str, List[str], str]:
+def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
     r = 摘要(url, timeout=10)
     if len(url) >= 250:
         return r
-    title, description, text, href, 真url = r
+    title, description, text, href, 真url, 重定向表 = r
+    重定向表 = {k: v for k, v in 重定向表.items() if k == f'https://{netloc(k)}/'}
+    if 重定向表:
+        for k, v in 重定向表.items():
+            b = netloc(k)
+            息 = 网站信息.get(b) or copy.deepcopy(默认息)
+            c = 息.setdefault('重定向', {})
+            c[k] = v
+            网站信息[b] = 息
     门[真url] = title, description[:256]
     l = 分析.龙(title, description, text)
     if l:
@@ -60,7 +68,7 @@ def 求质量和特征(域名: str) -> Tuple[float, str, List[str]]:
         s *= 0.6
     z = ' '.join([title, description, text])
     e = z.encode('utf8')
-    特征 = len(z), hashlib.md5(e).hexdigest(),  sum([*e])
+    特征 = len(z), hashlib.md5(e).hexdigest(), sum([*e])
     关键词 = [x[0] for x in sorted(分析.龙('', '', text), key=lambda x:-x[1])[:40]]
     return s, 特征, 关键词
 
@@ -73,13 +81,14 @@ def 求质量和特征(域名: str) -> Tuple[float, str, List[str]]:
     '特征': None,
     '关键词': None,
     '最后访问时间': 0,
+    '重定向': {}
 }
 
 
 def 超吸(url: str) -> List[str]:
     访问url数.update(1)
     try:
-        title, description, text, href, 真url = 摘(url)
+        title, description, text, href, 真url, 重定向表 = 摘(url)
 
         b = netloc(真url)
         超b = 缩(真url)
@@ -136,7 +145,7 @@ def 纯化(f: Callable, a: Iterable[str], k: float) -> List[str]:
     return res
 
 
-def 重整(url_list: List[Tuple[str, float]]):
+def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
     def 计算兴趣(域名: str, 已访问次数: int) -> float:
         限制 = 繁荣表.get(域名, 0) * 500 + 50
         b = 0.1**(1/限制)
@@ -160,7 +169,7 @@ def 重整(url_list: List[Tuple[str, float]]):
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(30, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 2
-        return max(0.1, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
+        return max(0.2, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
@@ -169,21 +178,20 @@ def 重整(url_list: List[Tuple[str, float]]):
     缓存信息 = {k: v for k, v in zip(domains, pool.map(网站信息.get, domains))}
     a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//5+100))
     a = {url for url, w in a}
-    res = 纯化(缩, a, 爬取集中度)
+    res = 纯化(lambda url: tldextract.extract(url).domain, a, 爬取集中度)
     return res
 
 
 打点 = []
 
 
-def bfs(start, epoch=999999):
+def bfs(start: str, epoch=999999):
     global 打点
     吸过 = set()
     pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
     for _ in range(epoch):
-        for i in q:
-            吸过.add(i)
+        吸过 |= {*q}
         新q = []
         for href in pool.map(超吸, q):
             n = len(href)

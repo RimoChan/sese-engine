@@ -1,7 +1,7 @@
 import logging
 from functools import lru_cache
 from urllib.parse import urlparse
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable, Dict, List
 
 from reppy.robots import Robots, AllowNone
 import requests
@@ -45,7 +45,13 @@ def _解析文本(resp, 大小限制=None) -> str:
         return data.decode(resp.encoding, 'ignore')
 
 
-def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, dict]:
+def _重定向表(resp) -> Iterable[Tuple[str, str]]:
+    for i in resp.history:
+        if i.status_code in (301, 308):
+            yield i.url, i.headers['Location']
+
+
+def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, str, Dict[str, str]]:
     q = urlparse(url)
     if 乖:
         rp = 萝卜(f'{q.scheme}://{q.netloc}')
@@ -59,10 +65,10 @@ def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, dict]:
     resp.raise_for_status()
     if 'text/html' not in resp.headers.get('Content-Type', ''):
         raise LoliError(f'类型{resp.headers.get("Content-Type")}不行！')
-    return _解析文本(resp, 大小限制), resp.url
+    return _解析文本(resp, 大小限制), resp.url, dict(_重定向表(resp))
 
 
-def 爬(url, **d) -> Optional[str]:
+def 爬(url, **d) -> Optional[Tuple[str, str, Dict[str, str]]]:
     try:
         return 真爬(url, **d)
     except LoliError as e:
