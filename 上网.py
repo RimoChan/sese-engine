@@ -3,6 +3,7 @@ import copy
 import json
 import time
 import random
+import socket
 import hashlib
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -50,7 +51,7 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
     return r
 
 
-def 求质量和特征(域名: str) -> Tuple[float, str, List[str]]:
+def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool]:
     try:
         title, description, text = 摘(f'https://{域名}/')[:3]
         https可用 = True
@@ -70,7 +71,7 @@ def 求质量和特征(域名: str) -> Tuple[float, str, List[str]]:
     e = z.encode('utf8')
     特征 = len(z), hashlib.md5(e).hexdigest(), sum([*e])
     关键词 = [x[0] for x in sorted(分析.龙('', '', text), key=lambda x:-x[1])[:40]]
-    return s, 特征, 关键词
+    return s, 特征, 关键词, https可用
 
 
 默认息 = {
@@ -81,7 +82,9 @@ def 求质量和特征(域名: str) -> Tuple[float, str, List[str]]:
     '特征': None,
     '关键词': None,
     '最后访问时间': 0,
-    '重定向': {}
+    '重定向': {},
+    'https可用': None,
+    'ip': None
 }
 
 
@@ -97,8 +100,8 @@ def 超吸(url: str) -> List[str]:
         息['访问次数'] += 1
         息['最后访问时间'] = int(time.time())
         try:
-            if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None:
-                息['质量'], 息['特征'], 息['关键词'] = 求质量和特征(b)
+            if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None or 息.get('https可用') is None:
+                息['质量'], 息['特征'], 息['关键词'], 息['https可用'] = 域名基本信息(b)
         except Exception as e:
             tqdm_exception_logger(e)
         try:
@@ -113,13 +116,18 @@ def 超吸(url: str) -> List[str]:
                     息['链接'] = random.sample(息['链接'], 200)
         except Exception as e:
             tqdm_exception_logger(e)
+        try:
+            if 息.get('ip') is None:
+                息['ip'] = [i[4][0] for i in socket.getaddrinfo(b, 443, 0, 0, socket.SOL_TCP)][:3]
+        except Exception as e:
+            tqdm_exception_logger(e)
         网站信息[b] = 息
 
         if 超b != b:
             超息 = 网站信息.get(超b) or copy.deepcopy(默认息)
             try:
-                if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None:
-                    超息['质量'], 超息['特征'], 超息['关键词'] = 求质量和特征(超b)
+                if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None or 超息.get('https可用') is None:
+                    超息['质量'], 超息['特征'], 超息['关键词'], 超息['https可用'] = 域名基本信息(超b)
             except Exception as e:
                 tqdm_exception_logger(e)
             超息['访问次数'] += 0.2
@@ -169,7 +177,7 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(30, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 2
-        return max(0.2, 中文度) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
+        return (0.2 + 中文度*0.8) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
@@ -190,7 +198,7 @@ def bfs(start: str, epoch=999999):
     吸过 = set()
     pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
-    for _ in range(epoch):
+    for ep in range(epoch):
         吸过 |= {*q}
         新q = []
         for href in pool.map(超吸, q):
@@ -207,6 +215,7 @@ def bfs(start: str, epoch=999999):
         c = Counter([netloc(x) for x in q])
         超c = Counter([缩(x) for x in q])
         打点.append({
+            'ep': ep,
             '上次抓到的长度': 上l,
             'url个数': len(q),
             '域名个数': len(c),
