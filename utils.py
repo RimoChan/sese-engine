@@ -6,8 +6,9 @@ from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, Tuple
 
-from tqdm import tqdm
+import lxml.html
 import jieba as jiba
+from tqdm import tqdm
 
 from 类 import 阵
 
@@ -145,3 +146,23 @@ def 分解(url: str):
     for i in sp[1:]:
         s = f'{s}/{i}'
         yield s
+
+
+_压缩 = {'div': 0, 'meta': 1, 'script': 2, 'link': 3, 'h2': 4, 'h3': 5, 'td': 6, 'input': 7, 'source': 8, 'dd': 9, 'label': 10, 'nav': 11, 'picture': 12, 'section': 13, 'button': 14, 'dt': 15, 'form': 16, 'dl': 17, 'head': 18, 'body': 19, 'html': 20, 'title': 21, 'tr': 22, 'code': 23, 'style': 24, 'strong': 25, 'h4': 26, 'i': 27, 'table': 28, 'em': 29, 'h1': 30, 'noscript': 31, 'header': 32, 'video': 33, 'footer': 34, 'b': 35, 'iframe': 36, 'tbody': 37, 'template': 38, 'hr': 39, 'pre': 40, 'small': 41, 'figure': 42, 'center': 43, 'main': 44, 'th': 45, 'h5': 46, 'h6': 47, 'fieldset': 48, 'article': 49, 'var': 50, 'option': 51, 'select': 52, 'font': 53, 'ol': 54, 'legend': 55, 'track': 56, 'aside': 57, 's': 58, 'blockquote': 59, 'area': 60, 'base': 61, 'map': 62, 'textarea': 63, 'big': 64}
+def html结构特征(raw: str) -> str:
+    if not raw:
+        return ''
+    root = lxml.html.document_fromstring(raw)
+    j_root = []
+    def dfs(r: lxml.html.HtmlElement, now):
+        for x in r:
+            if x.tag in ('a', 'p', 'li', 'ul', 'span', 'img', 'br', 'svg') or not isinstance(x.tag, str):
+                continue
+            c = []
+            z = _压缩.get(x.tag, x.tag)
+            now.append((z, c))
+            dfs(x, c)
+            if now[-1][1] == []:
+                now[-1] = z
+    dfs([root], j_root)
+    return json.dumps(j_root, separators=(',', ':'))[:512]

@@ -18,7 +18,7 @@ import 信息
 from 文 import 缩, 摘要
 from 存储 import 融合之门
 from 配置 import 爬取线程数, 爬取集中度, 单网页最多关键词, 入口, 存储位置
-from utils import tqdm_exception_logger, 坏, 检测语言, netloc
+from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构特征
 
 
 门 = 融合之门(存储位置/'门')
@@ -33,7 +33,7 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
     r = 摘要(url, timeout=10)
     if len(url) >= 250:
         return r
-    title, description, text, href, 真url, 重定向表 = r
+    title, description, text, href, 真url, 重定向表, raw = r
     重定向表 = {k: v for k, v in 重定向表.items() if k == f'https://{netloc(k)}/'}
     if 重定向表:
         for k, v in 重定向表.items():
@@ -53,10 +53,10 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
 
 def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool]:
     try:
-        title, description, text = 摘(f'https://{域名}/')[:3]
+        title, description, text, href, 真url, 重定向表, raw = 摘(f'https://{域名}/')
         https可用 = True
     except Exception:
-        title, description, text = 摘(f'http://{域名}/')[:3]
+        title, description, text, href, 真url, 重定向表, raw = 摘(f'http://{域名}/')
         https可用 = False
     s = 1.0
     if not title:
@@ -70,8 +70,9 @@ def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool]:
     z = ' '.join([title, description, text])
     e = z.encode('utf8')
     特征 = len(z), hashlib.md5(e).hexdigest(), sum([*e])
+    结构 = html结构特征(raw)
     关键词 = [x[0] for x in sorted(分析.龙('', '', text), key=lambda x:-x[1])[:40]]
-    return s, 特征, 关键词, https可用
+    return s, 特征, 关键词, https可用, 结构
 
 
 默认息 = {
@@ -84,14 +85,15 @@ def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool]:
     '最后访问时间': 0,
     '重定向': {},
     'https可用': None,
-    'ip': None
+    'ip': None,
+    '结构': None,
 }
 
 
 def 超吸(url: str) -> List[str]:
     访问url数.update(1)
     try:
-        title, description, text, href, 真url, 重定向表 = 摘(url)
+        title, description, text, href, 真url, 重定向表, raw = 摘(url)
 
         b = netloc(真url)
         超b = 缩(真url)
@@ -100,8 +102,8 @@ def 超吸(url: str) -> List[str]:
         息['访问次数'] += 1
         息['最后访问时间'] = int(time.time())
         try:
-            if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None or 息.get('https可用') is None:
-                息['质量'], 息['特征'], 息['关键词'], 息['https可用'] = 域名基本信息(b)
+            if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None or 息.get('https可用') is None or 息.get('结构') is None:
+                息['质量'], 息['特征'], 息['关键词'], 息['https可用'], 息['结构'] = 域名基本信息(b)
         except Exception as e:
             tqdm_exception_logger(e)
         try:
@@ -126,8 +128,8 @@ def 超吸(url: str) -> List[str]:
         if 超b != b:
             超息 = 网站信息.get(超b) or copy.deepcopy(默认息)
             try:
-                if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None or 超息.get('https可用') is None:
-                    超息['质量'], 超息['特征'], 超息['关键词'], 超息['https可用'] = 域名基本信息(超b)
+                if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None or 超息.get('https可用') is None or 超息.get('结构') is None:
+                    超息['质量'], 超息['特征'], 超息['关键词'], 超息['https可用'], 超息['结构'] = 域名基本信息(超b)
             except Exception as e:
                 tqdm_exception_logger(e)
             超息['访问次数'] += 0.2
@@ -177,7 +179,8 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(30, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 2
-        return (0.2 + 中文度*0.8) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣
+        协议 = 1 - 0.5 * url.startswith('http://')
+        return (0.2 + 中文度*0.8) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣 * 协议
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
