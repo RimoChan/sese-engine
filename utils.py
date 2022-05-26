@@ -1,5 +1,7 @@
 import re
+import os
 import json
+import traceback
 import threading
 from functools import lru_cache
 from urllib.parse import urlparse
@@ -87,7 +89,7 @@ def 切(s: str, 多=False):
 
 
 _tl = {}
-def tqdm_exception_logger(e):
+def tqdm_exception_logger(e, log_path=None):
     c = type(e)
     s = c.__name__
     if c.__module__ != 'builtins':
@@ -101,6 +103,16 @@ def tqdm_exception_logger(e):
     if s not in _tl:
         _tl[s] = tqdm(desc=f'{s}', ncols=60)
     _tl[s].update(1)
+    if log_path:
+        pid = os.getpid()
+        filename = f'{log_path}/{pid}.log'
+        try:
+            with open(filename, 'a', encoding='utf8') as f:
+                f.write('='*20+'\n'+''.join(traceback.format_exception(type(e), e, e.__traceback__)))
+            if os.path.getsize(filename) > 50 * 1024 * 1024:
+                os.remove(filename)
+        except Exception as e:
+            print(f'log failed {e}!')
 
 
 def 坏(url: str) -> float:
