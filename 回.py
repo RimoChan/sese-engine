@@ -3,6 +3,7 @@ import time
 import random
 import logging
 import datetime
+from typing import Tuple, Dict
 
 from tqdm import tqdm
 from utils import 分解, netloc
@@ -24,17 +25,34 @@ def 域名相似(a: str, b: str) -> float:
     return len(a & b) / max(1, len(a | b))
 
 
-def 刷新():
+def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
     网站之门 = 融合之门(存储位置/'网站之门')
     子域名个数 = {}
-    for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='第1轮域名个数'):
+    模板个数 = {}
+    for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计数'):
+        if (i+1) % 100_0000 == 0:
+            模板个数 = {k: v for k, v in 模板个数.items() if v > 1}
         超b = 缩(k)
         子域名个数[超b] = 子域名个数.get(超b, 0) + 1
-    子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 3}
+        if t:=v.get('结构'):
+            模板个数[t] = 模板个数.get(t, 0) + 1
+    print(f'一级域名个数: {len(子域名个数)}')
+    子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 4}
+    模板个数 = {k: v for k, v in 模板个数.items() if v >= 4}
+    return 子域名个数, 模板个数
+
+
+def 刷新():
+    子域名个数, 模板个数 = 计数()
     with open(存储位置/'子域名个数.json', 'w', encoding='utf8') as f:
         f.write(json.dumps(子域名个数, ensure_ascii=False, indent=2))
+    with open(存储位置/'模板个数.json', 'w', encoding='utf8') as f:
+        f.write(json.dumps(模板个数, ensure_ascii=False, indent=2))
+    网站之门 = 融合之门(存储位置/'网站之门')
     d = {}
-    for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='第2轮域名个数'):
+    for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计算反向链接'):
+        if (i+1) % 100_0000 == 0:
+            d = {k: v for k, v in d.items() if v >= 0.04}
         a = v.get('链接')
         if not a:
             continue
@@ -44,30 +62,31 @@ def 刷新():
         if 过去天数 > 180:
             continue
         时间倍 = 0.99 ** 过去天数
-        个 = 子域名个数.get(超b, 1)
+        协议倍 = 0.5 * bool(v.get('https可用')) + 0.5
+        结构 = v.get('结构')
+        个 = max(子域名个数.get(超b, 1), 模板个数.get(结构, 1))
         if 个 > 1000:
             if random.random() > 1000/个:
                 continue
             个 = 1000
-        域名倍 = 1 / ((max(个, 10)/10) ** 0.5)
+        域名倍 = 1 / ((max(个, 5)/5) ** 0.6)
         n = len(a)
         xd = {}
         w = 1/max(n, 50)
         for url in a:
             for x in 分解(url):
-                真w = w * (1 - 域名相似(k, netloc(url))) * 时间倍 * 域名倍
+                真w = w * (1 - 域名相似(k, netloc(url)))
                 if x not in xd:
                     xd[x] = 真w
                 else:
                     xd[x] += 真w
+        倍 = 时间倍 * 域名倍 * 协议倍
         for x, w in xd.items():
-            w = min(w, 0.15)
+            w = min(w, 0.15) * 倍
             if x not in d:
                 d[x] = w
             else:
                 d[x] += w
-        if (i+1) % 100_0000 == 0:
-            d = {k: v for k, v in d.items() if v >= 0.03}
     print('好！')
     d = {k: v for k, v in d.items() if v > 0.16}
     d = dict(sorted(d.items()))
@@ -75,9 +94,8 @@ def 刷新():
     q = [v for k, v in d.items() if '/' not in k]
     print(f'繁荣的域名个数: {len(q)}，繁荣的域名总能量: {sum(q)}')
 
-    s = json.dumps(d, ensure_ascii=2, indent=2)
     with open(存储位置/'繁荣.json', 'w') as f:
-        f.write(s)
+        f.write(json.dumps(d, ensure_ascii=2, indent=2))
 
 
 if __name__ == '__main__':
