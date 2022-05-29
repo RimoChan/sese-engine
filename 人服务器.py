@@ -25,7 +25,7 @@ import 文
 import 信息
 from 存储 import 索引空间, 融合之门
 from 分析 import 分
-from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置, 权重每日衰减, 语种权重, 连续关键词权重, 反向链接权重
+from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置, 权重每日衰减, 语种权重, 连续关键词权重, 反向链接权重, 减权关键词, 减权关键词权重
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 threading.excepthook = lambda x: print(f'{x.thread} 遇到了exception: {repr(x.exc_value)}')
@@ -62,15 +62,6 @@ def search():
     return resp
 
 
-@app.route('/test')
-def test():
-    return app.response_class(
-        response=json.dumps(1),
-        status=200,
-        mimetype='application/json',
-    )
-
-
 _息 = lru_cache(maxsize=4096)(lambda b, _: 网站信息.get(b, {}))
 息 = lambda b: _息(b, int(time.time())//(3600*24))
 
@@ -88,7 +79,7 @@ def _search():
         kiss = [i for i in kiss if i not in 屏蔽词]
         assert len(kiss) < 20, '太多了，不行！'
         a, b = map(int, flask.request.args.get('slice', '0:10').split(':'))
-        assert 0 <= a < b and b-a <= 10, '太长了，不行！'
+        assert 0 <= a < b and b-a <= 20, '太长了，不行！'
         sli = slice(a, b)
         with 计时(kiss):
             结果, 总数 = 查询(kiss, sli, site)
@@ -99,14 +90,14 @@ def _search():
                 '总数': 总数,
             }
         return app.response_class(
-            response=json.dumps(data, indent=4, ensure_ascii=False),
+            response=json.dumps(data, indent=2, ensure_ascii=False),
             status=200,
             mimetype='application/json',
         )
     except Exception as e:
         logging.exception(e)
         return app.response_class(
-            response=json.dumps({'信息': str(e)}, indent=4, ensure_ascii=False),
+            response=json.dumps({'信息': str(e)}, indent=2, ensure_ascii=False),
             status=500,
             mimetype='application/json',
         )
@@ -185,15 +176,18 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
                 if vp > 0.1:
                     vp = 0.1 + (vp - 0.1) / 2.2
                 相关 *= vp
-            d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, (1-不喜欢), 1, 1, 调整, 1, 1
+            d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, (1-不喜欢), 1, 1, 调整, 1, 1, 1
     with 计时(f'初排序{keys}'):
         q = sorted([(v, k) for k, v in d.items()], reverse=True)
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=128)
+    
+    坏词 = {*减权关键词}
     with 计时(f'网站信息{keys}'):
         def r(item):
             v, k = item
             网站 = 息(netloc(k))
-            语种 = 网站.get('语种', {})
+            语种 = 网站.get('语种') or {}
+            词 = 网站.get('关键词') or []
             中文度 = 语种.get('zh', 0)
             怪文度 = sum(语种.values()) - 语种.get('zh', 0) - 语种.get('en', 0) - 语种.get('ja', 0)
             语种倍 = 1 + 中文度*语种权重 - 怪文度*语种权重
@@ -201,7 +195,8 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             过去天数 = (int(time.time()) - 时间) // (3600*24)
             过去天数 = max(0, min(180, 过去天数-1))
             时间倍 = 权重每日衰减 ** 过去天数
-            vv = v[0]*语种倍*时间倍, v[1], v[2], v[3], 语种倍, v[5], v[6], 时间倍, v[8]
+            词倍 = 1 - min(len({*词} & 坏词)*减权关键词权重, 0.5)
+            vv = v[0]*语种倍*时间倍*词倍, v[1], v[2], v[3], 语种倍, v[5], v[6], 时间倍, v[8], 词倍
             return (vv, k)
         q[:128] = [*pool.map(r, q[:128])]
     q.sort(reverse=True)
@@ -212,7 +207,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             else:
                 重复倍 = 1-(h-0.5)
             连续倍 = 连续关键词权重 ** x
-            vv = v[0]*重复倍*连续倍, v[1], v[2], v[3], v[4], 重复倍, v[6], v[7], 连续倍
+            vv = v[0]*重复倍*连续倍, v[1], v[2], v[3], v[4], 重复倍, v[6], v[7], 连续倍, v[9]
             return vv, k
         def rf(item):
             v, url = item
@@ -256,12 +251,16 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
                 }
             else:
                 msg = None
-        if msg and (not msg['描述'] and not msg['文本']):
-            msg['描述'] = description[:80]
-            msg['文本'] = text[:80]
-        if msg and (msg['文本'] and msg['描述'] == msg['标题']):
-            msg['描述'] = ''
-        原因 = {'内容与关键词相关': v[1], '反向链接加成': v[2], 'URL格式': v[3], '域名的语种': v[4], '标题与其他结果重复': v[5], '对域名的预调整': v[6], '我们对这个域名的认知过期了': v[7], '连续的关键词': v[8]}
+        if msg:
+            if not msg['描述'] and not msg['文本']:
+                msg['描述'] = description[:80]
+                msg['文本'] = text[:80]
+            if msg['文本']:
+                if msg['描述'] in msg['标题']:
+                    msg['描述'] = ''
+                elif len(msg['描述']) < 3 and len(msg['文本']) >= 3:
+                    msg['描述'] = ''
+        原因 = {'内容与关键词相关': v[1], '反向链接加成': v[2], 'URL格式': v[3], '域名的语种': v[4], '标题与其他结果重复': v[5], '对域名的预调整': v[6], '我们对这个域名的认知过期了': v[7], '连续的关键词': v[8], '域名的内容': v[9]}
         res.append({
             '分数': v[0],
             '原因': {k: v for k, v in 原因.items() if not 0.999 < v < 1.001},
@@ -328,4 +327,4 @@ def 缓存摘要(url: str):
 
 
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=4950)
+    serve(app, host='0.0.0.0', port=80)
