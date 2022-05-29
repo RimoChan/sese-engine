@@ -19,6 +19,8 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str, Dict[str, str]
         raw, 真url, 重定向表 = t
     else:
         return '', '', '', [], url, {}, ''
+    if not raw:
+        return '', '', '', [], 真url, 重定向表, raw
     q = urlparse(真url)
     基 = f'{q.scheme}://{q.netloc}'
 
