@@ -196,8 +196,7 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
 打点 = []
 
 
-def bfs(start: str, epoch=999999):
-    global 打点
+def bfs(start: str, epoch=200):
     吸过 = set()
     pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
@@ -226,11 +225,8 @@ def bfs(start: str, epoch=999999):
             '各个域名的url个数': dict(c.most_common(20)),
             '各个一级域名的url个数': dict(超c.most_common(20)),
         })
-        打点 = 打点[-50:]
         with open('打点.json', 'w', encoding='utf8') as f:
             f.write(json.dumps(打点, indent=2, ensure_ascii=False))
-        if len(吸过) > 3*10**6:
-            吸过 = set()
 
 
 if __name__ == '__main__':
