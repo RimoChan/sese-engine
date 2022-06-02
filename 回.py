@@ -3,7 +3,7 @@ import time
 import random
 import logging
 import datetime
-from typing import Tuple, Dict, Optional, List
+from typing import Tuple, Dict, Optional, List, Iterable
 
 from tqdm import tqdm
 from utils import 分解, netloc
@@ -15,11 +15,11 @@ from 存储 import 融合之门
 
 def 域名相似(a: str, b: str) -> float:
     a = a.split('.')[:-1]
-    if a and a[0]=='www':
+    if a and a[0] == 'www':
         a = a[1:]
     a = {*a}
     b = b.split('.')[:-1]
-    if b and b[0]=='www':
+    if b and b[0] == 'www':
         b = b[1:]
     b = {*b}
     return len(a & b) / max(1, len(a | b))
@@ -41,9 +41,9 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
             模板个数 = {k: v for k, v in 模板个数.items() if v > 1}
         超b = 缩(k)
         子域名个数[超b] = 子域名个数.get(超b, 0) + 1
-        if t:=v.get('结构'):
+        if t := v.get('结构'):
             模板个数[t] = 模板个数.get(t, 0) + 1
-        if ip:=v.get('ip'):
+        if ip := v.get('ip'):
             ip_str = ip字符串(ip)
             同ip个数[ip_str] = 同ip个数.get(ip_str, 0) + 1
     print(f'一级域名个数: {len(子域名个数)}')
@@ -53,18 +53,10 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
     return 子域名个数, 模板个数, 同ip个数
 
 
-def 刷新():
-    子域名个数, 模板个数, 同ip个数 = 计数()
-    with open(存储位置/'子域名个数.json', 'w', encoding='utf8') as f:
-        f.write(json.dumps(子域名个数, ensure_ascii=False, indent=2))
-    with open(存储位置/'模板个数.json', 'w', encoding='utf8') as f:
-        f.write(json.dumps(模板个数, ensure_ascii=False, indent=2))
-    with open(存储位置/'同ip个数.json', 'w', encoding='utf8') as f:
-        f.write(json.dumps(同ip个数, ensure_ascii=False, indent=2))
-    网站之门 = 融合之门(存储位置/'网站之门')
+def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同ip个数, desc) -> Dict[str, float]:
     ip来源 = {}
     d = {}
-    for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计算反向链接'):
+    for i, (k, v) in tqdm(enumerate(f), desc=desc):
         if (i+1) % 100_0000 == 0:
             d = {k: v for k, v in d.items() if v >= 0.04}
             ip来源 = {k: v for k, v in ip来源.items() if v >= 0.04}
@@ -77,7 +69,6 @@ def 刷新():
         if 过去天数 > 180:
             continue
         时间倍 = 0.99 ** 过去天数
-        协议倍 = 0.5 * bool(v.get('https可用')) + 0.5
         结构 = v.get('结构')
         个 = max(子域名个数.get(超b, 1), 模板个数.get(结构, 1))
         if 个 > 1000:
@@ -95,7 +86,7 @@ def 刷新():
                     xd[x] = 真w
                 else:
                     xd[x] += 真w
-        倍 = 时间倍 * 域名倍 * 协议倍
+        倍 = 时间倍 * 域名倍
         ip_str = ip字符串(v.get('ip'))
         for x, w in xd.items():
             w = min(w, 0.15) * 倍
@@ -105,20 +96,39 @@ def 刷新():
                 if ip_str in 同ip个数 and d[x] > 0.2:
                     key = f'{x}-{ip_str}'
                     if ip来源.get(key, 0) > 0.4:
-                        # print(key, ip来源[key], d[x])
                         continue
                     ip来源[key] = ip来源.get(key, 0) + w
                 d[x] += w
-
     print('好！')
+    d = {k: v for k, v in d.items() if v > 0.16}
+    return d
+
+
+def 存档(path, data):
+    open(path, 'w', encoding='utf8').write(json.dumps(data, ensure_ascii=False, indent=2))
+
+
+def 刷新():
+    子域名个数, 模板个数, 同ip个数 = 计数()
+    存档(存储位置/'子域名个数.json', 子域名个数)
+    存档(存储位置/'模板个数.json', 模板个数)
+    存档(存储位置/'同ip个数.json', 同ip个数)
+    网站之门 = 融合之门(存储位置/'网站之门')
+
+    源1 = filter(lambda x: x[1].get('https可用'), 网站之门.items())
+    d1 = 超融合(源1, 子域名个数, 模板个数, 同ip个数, '计算HTTPS反向链接')
+    源2 = filter(lambda x: not x[1].get('https可用'), 网站之门.items())
+    d2 = 超融合(源2, 子域名个数, 模板个数, 同ip个数, '计算HTTP反向链接')
+
+    ks = {*d1, *d2}
+    d = {k: d1.get(k, 0) + min(d1.get(k, 0) + d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
     d = {k: v for k, v in d.items() if v > 0.16}
     d = dict(sorted(d.items()))
 
     q = [v for k, v in d.items() if '/' not in k]
     print(f'繁荣的域名个数: {len(q)}，繁荣的域名总能量: {sum(q)}')
 
-    with open(存储位置/'繁荣.json', 'w') as f:
-        f.write(json.dumps(d, ensure_ascii=2, indent=2))
+    存档(存储位置/'繁荣.json', d)
 
 
 if __name__ == '__main__':
