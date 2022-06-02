@@ -120,7 +120,7 @@ def 坏(url: str) -> float:
     if '.htm' in url or '.php' in url:
         s += (1-s) * 0.3
     if len(url.rstrip('/').split('/')) > 3:
-        s += (1-s) * 0.2
+        s += (1-s) * 0.1
     if url.startswith('http://'):
         s += (1-s) * 0.3
     s = min(s, 0.9)
