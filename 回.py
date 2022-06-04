@@ -36,9 +36,13 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
     子域名个数 = {}
     模板个数 = {}
     同ip个数 = {}
+    字段覆盖量 = {}
     for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计数'):
         if (i+1) % 100_0000 == 0:
             模板个数 = {k: v for k, v in 模板个数.items() if v > 1}
+        for a, b in v.items():
+            if b:
+                字段覆盖量[a] = 字段覆盖量.get(a, 0) + 1
         超b = 缩(k)
         子域名个数[超b] = 子域名个数.get(超b, 0) + 1
         if t := v.get('结构'):
@@ -47,6 +51,7 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
             ip_str = ip字符串(ip)
             同ip个数[ip_str] = 同ip个数.get(ip_str, 0) + 1
     print(f'一级域名个数: {len(子域名个数)}')
+    print(f'字段覆盖量: {字段覆盖量}')
     子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 4}
     模板个数 = {k: v for k, v in 模板个数.items() if v >= 4}
     同ip个数 = {k: v for k, v in 同ip个数.items() if v >= 4}
@@ -70,7 +75,7 @@ def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同i
             continue
         时间倍 = 0.99 ** 过去天数
         结构 = v.get('结构')
-        个 = max(子域名个数.get(超b, 1), 模板个数.get(结构, 1))
+        个 = max(子域名个数.get(超b, 1), int(模板个数.get(结构, 1)*1.5))
         if 个 > 1000:
             if random.random() > 1000/个:
                 continue
@@ -121,7 +126,7 @@ def 刷新():
     d2 = 超融合(源2, 子域名个数, 模板个数, 同ip个数, '计算HTTP反向链接')
 
     ks = {*d1, *d2}
-    d = {k: d1.get(k, 0) + min(d1.get(k, 0) + d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
+    d = {k: d1.get(k, 0) + min(d1.get(k, 0)+d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
     d = {k: v for k, v in d.items() if v > 0.16}
     d = dict(sorted(d.items()))
 
