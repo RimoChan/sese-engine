@@ -14,13 +14,13 @@ def 缩(url: str) -> str:
     return f'{t.domain}.{t.suffix}'
 
 
-def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str, Dict[str, str], str]:
+def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, str]:
     if t := 爬(url, **d):
-        raw, 真url, 重定向表 = t
+        raw, 真url, 重定向表, 服务器类型 = t
     else:
-        return '', '', '', [], url, {}, ''
+        return '', '', '', [], url, {}, '', ''
     if not raw:
-        return '', '', '', [], 真url, 重定向表, raw
+        return '', '', '', [], 真url, 重定向表, raw, 服务器类型
     q = urlparse(真url)
     基 = f'{q.scheme}://{q.netloc}'
 
@@ -69,4 +69,4 @@ def 摘要(url: str, **d) -> Tuple[str, str, str, List[str], str, Dict[str, str]
             if t := re.sub('\s+', ' ', r.tail).strip():
                 text.append(t)
     dfs(root)
-    return title, description, ' '.join(text), href, 真url, 重定向表, raw
+    return title, description, ' '.join(text), href, 真url, 重定向表, raw, 服务器类型

@@ -240,7 +240,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
             }
         else:
             if g := 门.get(url):
-                title, description = g
+                title, description = g[:2]
                 text = ''
                 print(f'从门中拿到了{url}')
                 msg = {

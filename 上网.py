@@ -25,15 +25,16 @@ from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构�
 繁荣表 = 信息.繁荣表()
 
 访问url数 = tqdm(desc='访问url数')
+访问成功url数 = tqdm(desc='访问成功url数')
 
 网站信息 = 融合之门(存储位置/'网站之门')
 
 
-def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
+def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, str]:
     r = 摘要(url, timeout=10)
     if len(url) >= 250:
         return r
-    title, description, text, href, 真url, 重定向表, raw = r
+    title, description, text, href, 真url, 重定向表, raw, 服务器类型 = r
     重定向表 = {k: v for k, v in 重定向表.items() if k == f'https://{netloc(k)}/'}
     if 重定向表:
         for k, v in 重定向表.items():
@@ -42,7 +43,7 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
             c = 息.setdefault('重定向', {})
             c[k] = v
             网站信息[b] = 息
-    门[真url] = title, description[:256]
+    门[真url] = title, description[:256], text[:256], int(time.time())
     l = 分析.龙(title, description, text)
     if l:
         l = sorted(l, key=lambda x: x[1], reverse=True)[:单网页最多关键词]
@@ -53,10 +54,10 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str]]:
 
 def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool]:
     try:
-        title, description, text, href, 真url, 重定向表, raw = 摘(f'https://{域名}/')
+        title, description, text, href, 真url, 重定向表, raw, 服务器类型 = 摘(f'https://{域名}/')
         https可用 = True
     except Exception:
-        title, description, text, href, 真url, 重定向表, raw = 摘(f'http://{域名}/')
+        title, description, text, href, 真url, 重定向表, raw, 服务器类型 = 摘(f'http://{域名}/')
         https可用 = False
     s = 1.0
     if not title:
@@ -87,54 +88,76 @@ def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool]:
     'https可用': None,
     'ip': None,
     '结构': None,
+    '成功率': None,
+    '服务器类型': [],
 }
 
 
 def 超吸(url: str) -> List[str]:
     访问url数.update(1)
     try:
-        title, description, text, href, 真url, 重定向表, raw = 摘(url)
-
-        b = netloc(真url)
-        超b = 缩(真url)
-
-        息 = 网站信息.get(b) or copy.deepcopy(默认息)
-        息['访问次数'] += 1
-        息['最后访问时间'] = int(time.time())
         try:
-            if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None or 息.get('https可用') is None or 息.get('结构') is None:
-                息['质量'], 息['特征'], 息['关键词'], 息['https可用'], 息['结构'] = 域名基本信息(b)
+            title, description, text, href, 真url, 重定向表, raw, 服务器类型 = 摘(url)
         except Exception as e:
-            tqdm_exception_logger(e)
-        try:
-            if 息['访问次数'] < 10 or random.random() < 0.1:
-                语种 = 检测语言(' '.join((title, description, text)))
-                td = {k: v*0.9 for k, v in 息['语种'].items()}
-                td[语种] = td.get(语种, 0) + 0.1
-                息['语种'] = td
-                外href = [h for h in href if 缩(h) != 超b]
-                息['链接'] += random.sample(外href, min(10, len(外href)))
-                if len(息['链接']) > 250:
-                    息['链接'] = random.sample(息['链接'], 200)
-        except Exception as e:
-            tqdm_exception_logger(e)
-        try:
-            if 息.get('ip') is None:
+            b = netloc(url)
+            息 = 网站信息.get(b) or copy.deepcopy(默认息)
+            if 息.get('ip') is None:    # 不做错误处理，如果DNS查询失败说明它不是域名
                 息['ip'] = [i[4][0] for i in socket.getaddrinfo(b, 443, 0, 0, socket.SOL_TCP)][:3]
-        except Exception as e:
-            tqdm_exception_logger(e)
-        网站信息[b] = 息
+            if 息.get('成功率') is None:
+                息['成功率'] = 0
+            息['成功率'] *= 0.99
+            网站信息[b] = 息
+            raise e
+        else:
+            访问成功url数.update(1)
+            b = netloc(真url)
+            超b = 缩(真url)
 
-        if 超b != b:
-            超息 = 网站信息.get(超b) or copy.deepcopy(默认息)
+            息 = 网站信息.get(b) or copy.deepcopy(默认息)
+            息['访问次数'] += 1
+            息['最后访问时间'] = int(time.time())
+            if 息.get('成功率') is None:
+                息['成功率'] = 1
+            息['成功率'] = 息['成功率'] * 0.99 + 0.01
             try:
-                if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None or 超息.get('https可用') is None or 超息.get('结构') is None:
-                    超息['质量'], 超息['特征'], 超息['关键词'], 超息['https可用'], 超息['结构'] = 域名基本信息(超b)
+                if 息['质量'] is None or 息.get('特征') is None or 息.get('关键词') is None or 息.get('https可用') is None or 息.get('结构') is None:
+                    息['质量'], 息['特征'], 息['关键词'], 息['https可用'], 息['结构'] = 域名基本信息(b)
             except Exception as e:
                 tqdm_exception_logger(e)
-            超息['访问次数'] += 0.2
-            网站信息[超b] = 超息
-        return href
+            try:
+                if not 息.get('服务器类型'):
+                    息['服务器类型'] = []
+                if 服务器类型 and 服务器类型 not in 息['服务器类型']:
+                    息['服务器类型'].append(服务器类型)
+                    息['服务器类型'] = 息['服务器类型'][-5:]
+                if 息['访问次数'] < 10 or random.random() < 0.1:
+                    语种 = 检测语言(' '.join((title, description, text)))
+                    td = {k: v*0.9 for k, v in 息['语种'].items()}
+                    td[语种] = td.get(语种, 0) + 0.1
+                    息['语种'] = td
+                    外href = [h for h in href if 缩(h) != 超b]
+                    息['链接'] += random.sample(外href, min(10, len(外href)))
+                    if len(息['链接']) > 250:
+                        息['链接'] = random.sample(息['链接'], 200)
+            except Exception as e:
+                tqdm_exception_logger(e)
+            try:
+                if 息.get('ip') is None:
+                    息['ip'] = [i[4][0] for i in socket.getaddrinfo(b, 443, 0, 0, socket.SOL_TCP)][:3]
+            except Exception as e:
+                tqdm_exception_logger(e)
+            网站信息[b] = 息
+
+            if 超b != b:
+                超息 = 网站信息.get(超b) or copy.deepcopy(默认息)
+                try:
+                    if 超息['质量'] is None or 超息.get('特征') is None or 超息.get('关键词') is None or 超息.get('https可用') is None or 超息.get('结构') is None:
+                        超息['质量'], 超息['特征'], 超息['关键词'], 超息['https可用'], 超息['结构'] = 域名基本信息(超b)
+                except Exception as e:
+                    tqdm_exception_logger(e)
+                超息['访问次数'] += 0.2
+                网站信息[超b] = 超息
+            return href
     except Exception as e:
         tqdm_exception_logger(e)
         time.sleep(0.25)
@@ -155,7 +178,7 @@ def 纯化(f: Callable, a: Iterable[str], k: float) -> List[str]:
     return res
 
 
-def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
+def 重整(url_list: List[Tuple[str, float]]) -> Tuple[List[str], List[str]]:
     def 计算兴趣(域名: str, 已访问次数: int) -> float:
         限制 = 繁荣表.get(域名, 0) * 500 + 50
         b = 0.1**(1/限制)
@@ -187,20 +210,21 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
     domains = {netloc(url) for url in urls} | {缩(url) for url in urls}
     pool = ThreadPoolExecutor(max_workers=16)
     缓存信息 = {k: v for k, v in zip(domains, pool.map(网站信息.get, domains))}
+    新发现的域名 = [k for k, v in 缓存信息.items() if v is None]
     a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//5+100))
     a = {url for url, w in a}
     res = 纯化(lambda url: tldextract.extract(url).domain, a, 爬取集中度)
-    return res
+    return res, 新发现的域名
 
 
 打点 = []
 
 
-def bfs(start: str, epoch=200):
+def bfs(start: str, epoch=150):
     吸过 = set()
     pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
-    for ep in range(epoch):
+    for ep in tqdm(range(epoch), ncols=60):
         吸过 |= {*q}
         新q = []
         for href in pool.map(超吸, q):
@@ -212,7 +236,7 @@ def bfs(start: str, epoch=200):
             print('队列空了，坏！')
             return
         上l = len(新q)
-        q = 重整(新q)
+        q, 新发现的域名 = 重整(新q)
 
         c = Counter([netloc(x) for x in q])
         超c = Counter([缩(x) for x in q])
@@ -222,6 +246,8 @@ def bfs(start: str, epoch=200):
             'url个数': len(q),
             '域名个数': len(c),
             '一级域名个数': len(超c),
+            '新发现的域名个数': len(新发现的域名),
+            '新发现的域名': 新发现的域名[:20],
             '各个域名的url个数': dict(c.most_common(20)),
             '各个一级域名的url个数': dict(超c.most_common(20)),
         })
@@ -230,6 +256,5 @@ def bfs(start: str, epoch=200):
 
 
 if __name__ == '__main__':
-    while True:
-        bfs(入口)
-        time.sleep(5)
+    time.sleep(3)
+    bfs(入口)

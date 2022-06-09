@@ -51,7 +51,7 @@ def _重定向表(resp) -> Iterable[Tuple[str, str]]:
             yield i.url, i.headers['Location']
 
 
-def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, str, Dict[str, str]]:
+def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, str, Dict[str, str], str]:
     q = urlparse(url)
     if 乖:
         rp = 萝卜(f'{q.scheme}://{q.netloc}')
@@ -65,10 +65,10 @@ def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, str, Dict[
     resp.raise_for_status()
     if 'text/html' not in resp.headers.get('Content-Type', ''):
         raise LoliError(f'类型{resp.headers.get("Content-Type")}不行！')
-    return _解析文本(resp, 大小限制), resp.url, dict(_重定向表(resp))
+    return _解析文本(resp, 大小限制), resp.url, dict(_重定向表(resp)), resp.headers.get('Server', '')
 
 
-def 爬(url, **d) -> Optional[Tuple[str, str, Dict[str, str]]]:
+def 爬(url, **d) -> Optional[Tuple[str, str, Dict[str, str], str]]:
     try:
         return 真爬(url, **d)
     except LoliError as e:
