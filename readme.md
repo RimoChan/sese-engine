@@ -43,7 +43,7 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
     搜索引擎在windows和linux上都可以运行，所以有两个可选的启动脚本 `启动.cmd` 和 `启动.sh`。
 
 
-这样你的搜索引擎服务应该就可以用了，你可以 `curl http://127.0.0.1:4950/search?q=test` 试一下。
+这样你的搜索引擎服务应该就可以用了，你可以 `curl http://127.0.0.1/search?q=test` 试一下。
 
 然后前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)。前端怎么部署呢，去看看云游君怎么说吧。
 
