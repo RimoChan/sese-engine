@@ -34,12 +34,15 @@ def ip字符串(ip_list: Optional[List[str]]) -> str:
 def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
     网站之门 = 融合之门(存储位置/'网站之门')
     子域名个数 = {}
+    服务器个数 = {}
     模板个数 = {}
     同ip个数 = {}
     字段覆盖量 = {}
     for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计数'):
         if (i+1) % 100_0000 == 0:
             模板个数 = {k: v for k, v in 模板个数.items() if v > 1}
+            同ip个数 = {k: v for k, v in 同ip个数.items() if v > 1}
+            服务器个数 = {k: v for k, v in 服务器个数.items() if v > 1}
         for a, b in v.items():
             if b:
                 字段覆盖量[a] = 字段覆盖量.get(a, 0) + 1
@@ -47,6 +50,9 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
         子域名个数[超b] = 子域名个数.get(超b, 0) + 1
         if t := v.get('结构'):
             模板个数[t] = 模板个数.get(t, 0) + 1
+        if t := v.get('服务器类型'):
+            s = ','.join(sorted(t))
+            服务器个数[s] = 服务器个数.get(s, 0) + 1
         if ip := v.get('ip'):
             ip_str = ip字符串(ip)
             同ip个数[ip_str] = 同ip个数.get(ip_str, 0) + 1
@@ -55,10 +61,11 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
     子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 4}
     模板个数 = {k: v for k, v in 模板个数.items() if v >= 4}
     同ip个数 = {k: v for k, v in 同ip个数.items() if v >= 4}
-    return 子域名个数, 模板个数, 同ip个数
+    服务器个数 = {k: v for k, v in 服务器个数.items() if v >= 4}
+    return 子域名个数, 模板个数, 同ip个数, 服务器个数
 
 
-def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同ip个数, desc) -> Dict[str, float]:
+def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同ip个数, 服务器个数, *, desc) -> Dict[str, float]:
     ip来源 = {}
     d = {}
     for i, (k, v) in tqdm(enumerate(f), desc=desc):
@@ -98,11 +105,12 @@ def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同i
             if x not in d:
                 d[x] = w
             else:
-                if ip_str in 同ip个数 and d[x] > 0.2:
-                    key = f'{x}-{ip_str}'
-                    if ip来源.get(key, 0) > 0.4:
-                        continue
-                    ip来源[key] = ip来源.get(key, 0) + w
+                if d[x] > 0.2:
+                    if ip_str in 同ip个数:
+                        key = f'{x}-{ip_str}'
+                        if ip来源.get(key, 0) > 0.4:
+                            continue
+                        ip来源[key] = ip来源.get(key, 0) + w
                 d[x] += w
     print('好！')
     d = {k: v for k, v in d.items() if v > 0.16}
@@ -114,16 +122,17 @@ def 存档(path, data):
 
 
 def 刷新():
-    子域名个数, 模板个数, 同ip个数 = 计数()
+    子域名个数, 模板个数, 同ip个数, 服务器个数 = 计数()
     存档(存储位置/'子域名个数.json', 子域名个数)
     存档(存储位置/'模板个数.json', 模板个数)
     存档(存储位置/'同ip个数.json', 同ip个数)
+    存档(存储位置/'服务器个数.json', 服务器个数)
     网站之门 = 融合之门(存储位置/'网站之门')
 
     源1 = filter(lambda x: x[1].get('https可用'), 网站之门.items())
-    d1 = 超融合(源1, 子域名个数, 模板个数, 同ip个数, '计算HTTPS反向链接')
+    d1 = 超融合(源1, 子域名个数, 模板个数, 同ip个数, 服务器个数, desc='计算HTTPS反向链接')
     源2 = filter(lambda x: not x[1].get('https可用'), 网站之门.items())
-    d2 = 超融合(源2, 子域名个数, 模板个数, 同ip个数, '计算HTTP反向链接')
+    d2 = 超融合(源2, 子域名个数, 模板个数, 同ip个数, 服务器个数, desc='计算HTTP反向链接')
 
     ks = {*d1, *d2}
     d = {k: d1.get(k, 0) + min(d1.get(k, 0)+d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
@@ -140,7 +149,7 @@ if __name__ == '__main__':
     while True:
         time.sleep((24 - datetime.datetime.now().hour + 2) * 3600)
         try:
-            print('刷新时间', datetime.datetime.now())
+            print('=======================\n刷新时间', datetime.datetime.now())
             刷新()
         except Exception as e:
             logging.exception(e)
