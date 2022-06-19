@@ -3,7 +3,7 @@ import time
 import random
 import logging
 import datetime
-from typing import Tuple, Dict, Optional, List, Iterable
+from typing import Tuple, Dict, Optional, List, Iterable, Callable
 
 from tqdm import tqdm
 from utils import 分解, netloc
@@ -11,18 +11,6 @@ from utils import 分解, netloc
 from 文 import 缩
 from 配置 import 存储位置
 from 存储 import 融合之门
-
-
-def 域名相似(a: str, b: str) -> float:
-    a = a.split('.')[:-1]
-    if a and a[0] == 'www':
-        a = a[1:]
-    a = {*a}
-    b = b.split('.')[:-1]
-    if b and b[0] == 'www':
-        b = b[1:]
-    b = {*b}
-    return len(a & b) / max(1, len(a | b))
 
 
 def ip字符串(ip_list: Optional[List[str]]) -> str:
@@ -65,15 +53,12 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
     return 子域名个数, 模板个数, 同ip个数, 服务器个数
 
 
-def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同ip个数, 服务器个数, *, desc) -> Dict[str, float]:
-    ip来源 = {}
-    d = {}
-    for i, (k, v) in tqdm(enumerate(f), desc=desc):
-        if (i+1) % 100_0000 == 0:
-            d = {k: v for k, v in d.items() if v >= 0.04}
-            ip来源 = {k: v for k, v in ip来源.items() if v >= 0.04}
-        a = v.get('链接')
-        if not a:
+def 超源(条件: Optional[Callable] = None, *, 子域名个数, 模板个数) -> Iterable[Tuple[str, dict, float]]:
+    网站之门 = 融合之门(存储位置/'网站之门')
+    for k, v in 网站之门.items():
+        if 条件 and not 条件(v):
+            continue
+        if not v.get('链接'):
             continue
         超b = 缩(k)
         时间 = v.get('最后访问时间', 1648300000)
@@ -88,17 +73,27 @@ def 超融合(f: Iterable[Tuple[str, dict]], 子域名个数, 模板个数, 同i
                 continue
             个 = 1000
         域名倍 = 1 / ((max(个, 5)/5) ** 0.6)
+        倍 = 时间倍 * 域名倍
+        yield k, v, 倍
+
+
+def 超融合(f: Iterable[Tuple[str, dict]], *, 同ip个数, desc) -> Dict[str, float]:
+    ip来源 = {}
+    d = {}
+    for i, (k, v, 倍) in tqdm(enumerate(f), desc=desc):
+        if (i+1) % 50_0000 == 0:
+            d = {k: v for k, v in d.items() if v >= 0.04}
+            ip来源 = {k: v for k, v in ip来源.items() if v >= 0.04}
+        a = v['链接']
         n = len(a)
         xd = {}
         w = 1/max(n, 50)
         for url in a:
             for x in 分解(url):
-                真w = w * (1 - 域名相似(k, netloc(url)))
                 if x not in xd:
-                    xd[x] = 真w
+                    xd[x] = w
                 else:
-                    xd[x] += 真w
-        倍 = 时间倍 * 域名倍
+                    xd[x] += w
         ip_str = ip字符串(v.get('ip'))
         for x, w in xd.items():
             w = min(w, 0.15) * 倍
@@ -127,12 +122,11 @@ def 刷新():
     存档(存储位置/'模板个数.json', 模板个数)
     存档(存储位置/'同ip个数.json', 同ip个数)
     存档(存储位置/'服务器个数.json', 服务器个数)
-    网站之门 = 融合之门(存储位置/'网站之门')
 
-    源1 = filter(lambda x: x[1].get('https可用'), 网站之门.items())
-    d1 = 超融合(源1, 子域名个数, 模板个数, 同ip个数, 服务器个数, desc='计算HTTPS反向链接')
-    源2 = filter(lambda x: not x[1].get('https可用'), 网站之门.items())
-    d2 = 超融合(源2, 子域名个数, 模板个数, 同ip个数, 服务器个数, desc='计算HTTP反向链接')
+    源1 = 超源(lambda x: x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数)
+    d1 = 超融合(源1, 同ip个数=同ip个数, desc='计算HTTPS反向链接')
+    源2 = 超源(lambda x: not x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数)
+    d2 = 超融合(源2, 同ip个数=同ip个数, desc='计算HTTP反向链接')
 
     ks = {*d1, *d2}
     d = {k: d1.get(k, 0) + min(d1.get(k, 0)+d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
