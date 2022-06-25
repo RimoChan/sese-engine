@@ -10,7 +10,7 @@ from fnmatch import fnmatch
 from itertools import islice
 from functools import lru_cache
 from urllib.parse import unquote
-from typing import List, Tuple, Optional, Iterator
+from typing import List, Tuple, Optional, Iterator, Union
 
 import flask
 import requests
@@ -41,7 +41,7 @@ app = flask.Flask(__name__)
 网站信息 = 融合之门(存储位置/'网站之门')
 
 
-def _荣(url: str):
+def _荣(url: str) -> Union[int, float]:
     s = 0
     for i in 分解(url):
         if t := 繁荣表.get(i):
@@ -49,6 +49,8 @@ def _荣(url: str):
         else:
             l = 0
         if s == 0:
+            if l == 0:
+                break
             s = l
         else:
             s = l + math.log((s-l)/2+1)
