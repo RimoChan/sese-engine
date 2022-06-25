@@ -19,18 +19,20 @@ def ip字符串(ip_list: Optional[List[str]]) -> str:
     return ','.join(ip_list)
 
 
-def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
+def 计数() -> Tuple[Dict[str, int], ...]:
     网站之门 = 融合之门(存储位置/'网站之门')
     子域名个数 = {}
     服务器个数 = {}
     模板个数 = {}
     同ip个数 = {}
     字段覆盖量 = {}
+    关键词个数 = {}
     for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计数'):
         if (i+1) % 100_0000 == 0:
             模板个数 = {k: v for k, v in 模板个数.items() if v > 1}
             同ip个数 = {k: v for k, v in 同ip个数.items() if v > 1}
             服务器个数 = {k: v for k, v in 服务器个数.items() if v > 1}
+            关键词个数 = {k: v for k, v in 关键词个数.items() if v > 1}
         for a, b in v.items():
             if b:
                 字段覆盖量[a] = 字段覆盖量.get(a, 0) + 1
@@ -44,13 +46,16 @@ def 计数() -> Tuple[Dict[str, int], Dict[str, int]]:
         if ip := v.get('ip'):
             ip_str = ip字符串(ip)
             同ip个数[ip_str] = 同ip个数.get(ip_str, 0) + 1
+        for 词 in v.get('关键词') or ():
+            关键词个数[词] = 关键词个数.get(词, 0) + 1
     print(f'一级域名个数: {len(子域名个数)}')
     print(f'字段覆盖量: {字段覆盖量}')
     子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 4}
     模板个数 = {k: v for k, v in 模板个数.items() if v >= 4}
     同ip个数 = {k: v for k, v in 同ip个数.items() if v >= 4}
     服务器个数 = {k: v for k, v in 服务器个数.items() if v >= 4}
-    return 子域名个数, 模板个数, 同ip个数, 服务器个数
+    关键词个数 = {k: v for k, v in 关键词个数.items() if v >= 4}
+    return 子域名个数, 模板个数, 同ip个数, 服务器个数, 关键词个数
 
 
 def 超源(条件: Optional[Callable] = None, *, 子域名个数, 模板个数) -> Iterable[Tuple[str, dict, float]]:
@@ -117,11 +122,12 @@ def 存档(path, data):
 
 
 def 刷新():
-    子域名个数, 模板个数, 同ip个数, 服务器个数 = 计数()
+    子域名个数, 模板个数, 同ip个数, 服务器个数, 关键词个数 = 计数()
     存档(存储位置/'子域名个数.json', 子域名个数)
     存档(存储位置/'模板个数.json', 模板个数)
     存档(存储位置/'同ip个数.json', 同ip个数)
     存档(存储位置/'服务器个数.json', 服务器个数)
+    存档(存储位置/'关键词个数.json', 关键词个数)
 
     源1 = 超源(lambda x: x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数)
     d1 = 超融合(源1, 同ip个数=同ip个数, desc='计算HTTPS反向链接')
