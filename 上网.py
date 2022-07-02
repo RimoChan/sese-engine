@@ -4,6 +4,7 @@ import time
 import random
 import socket
 import hashlib
+import threading
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Tuple, Iterable, Callable, Dict
@@ -11,6 +12,7 @@ from typing import List, Tuple, Iterable, Callable, Dict
 import requests
 import tldextract
 from tqdm import tqdm
+from persistqueue import Queue
 
 import 分析
 import 信息
@@ -21,12 +23,37 @@ from 配置 import 爬取线程数, 爬取集中度, 单网页最多关键词, �
 from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构特征
 
 
+队列最大长度 = 300000
+
 门 = 融合之门(存储位置/'门')
 繁荣表 = 信息.繁荣表()
+队 = Queue(存储位置/'临时队列', autosave=True, maxsize=队列最大长度)
+面板 = {x: tqdm(desc=x) for x in ['访问url数', '访问成功url数', '获取域名基本信息次数', '发送队列长度', '发送次数', '发送失败次数']}
 
-访问url数 = tqdm(desc='访问url数')
-访问成功url数 = tqdm(desc='访问成功url数')
-获取域名基本信息次数 = tqdm(desc='获取域名基本信息次数')
+
+def 真送(data):
+    面板['发送次数'].update(1)
+    try:
+        requests.post('http://127.0.0.1:5000/l', data=json.dumps(data)).raise_for_status()
+    except Exception:
+        面板['发送失败次数'].update(1)
+
+
+def 真送循环():
+    while True:
+        try:
+            data = 队.get()
+        except Exception as e:  # persistqueue偶尔会抛出PermissionError，原因不明
+            tqdm_exception_logger(e)
+            continue
+        真送(data)
+
+
+def 送(data):
+    队.put(data)
+    if random.random() < 0.1:
+        面板['发送队列长度'].n = 队.qsize()
+        面板['发送队列长度'].refresh()
 
 
 def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, str]:
@@ -46,7 +73,7 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, s
     if l:
         l = sorted(l, key=lambda x: x[1], reverse=True)[:单网页最多关键词]
         data = [真url, l]
-        requests.post('http://127.0.0.1:5000/l', data=json.dumps(data)).raise_for_status()
+        送(data)
     return r
 
 
@@ -68,7 +95,7 @@ def 再装填(b: str, x: 网站):
 
 
 def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool, str, str]:
-    获取域名基本信息次数.update(1)
+    面板['获取域名基本信息次数'].update(1)
     try:
         title, description, text, href, 真url, 重定向表, raw, 服务器类型 = 摘(f'https://{域名}/')
         https可用 = True
@@ -93,7 +120,7 @@ def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool, str, s
 
 
 def 超吸(url: str) -> List[str]:
-    访问url数.update(1)
+    面板['访问url数'].update(1)
     try:
         try:
             title, description, text, href, 真url, 重定向表, raw, 服务器类型 = 摘(url)
@@ -108,7 +135,7 @@ def 超吸(url: str) -> List[str]:
             超网站信息[b] = 息
             raise e
         else:
-            访问成功url数.update(1)
+            面板['访问成功url数'].update(1)
             b = netloc(真url)
             超b = 缩(真url)
 
@@ -164,7 +191,7 @@ def 纯化(f: Callable, a: Iterable[str], k: float) -> List[str]:
     return res
 
 
-def 重整(url_list: List[Tuple[str, float]]) -> Tuple[List[str], List[str]]:
+def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
     def 计算兴趣(域名: str, 已访问次数: int) -> float:
         限制 = 繁荣表.get(域名, 0) * 500 + 50
         b = 0.1**(1/限制)
@@ -188,8 +215,7 @@ def 重整(url_list: List[Tuple[str, float]]) -> Tuple[List[str], List[str]]:
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(30, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 2
-        协议 = 1 - 0.5 * url.startswith('http://')
-        return (0.2 + 中文度*0.8) * max(0.1, 兴趣) * 质量 * max(0.1, 兴趣2) * (1-坏(url)) * 基本权重 * 荣 * 协议
+        return (0.2+中文度*0.8) * (0.1+兴趣) * 质量 * (0.1+兴趣2) * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
@@ -199,20 +225,26 @@ def 重整(url_list: List[Tuple[str, float]]) -> Tuple[List[str], List[str]]:
     a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//5+100))
     a = {url for url, w in a}
     res = 纯化(lambda url: tldextract.extract(url).domain, a, 爬取集中度)
+    res_https = [i for i in res if i.startswith('https://')]
+    res_http = [i for i in res if not i.startswith('https://')]
+    if len(res_http) > len(res_https)//4:
+        res_http = random.sample(res_http, len(res_https)//4)
+    res = res_http + res_https
+    random.shuffle(res)
     return res
 
 
 打点 = []
 
 
-def bfs(start: str, epoch=150):
+def bfs(start: str, epoch=100):
     吸过 = set()
-    pool = ThreadPoolExecutor(max_workers=爬取线程数)
     q = [start]
     for ep in tqdm(range(epoch), ncols=60):
         吸过 |= {*q}
         新q = []
-        for href in pool.map(超吸, q):
+        线程数 = int((1.5-(队.qsize() / 队列最大长度))/1.5 * 爬取线程数)
+        for href in ThreadPoolExecutor(max_workers=线程数).map(超吸, q):
             n = len(href)
             for url in href:
                 if url not in 吸过:
@@ -239,5 +271,6 @@ def bfs(start: str, epoch=150):
 
 
 if __name__ == '__main__':
-    time.sleep(3)
+    for _ in range(16):
+        threading.Thread(target=真送循环, daemon=True).start()
     bfs(入口)

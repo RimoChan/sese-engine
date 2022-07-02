@@ -15,3 +15,4 @@ rimo-utils==1.7.0
 fasttext==0.9.2
 Levenshtein==0.18.1
 orjson==3.6.5
+persist-queue==0.8.0
