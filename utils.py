@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import logging
 import traceback
 import threading
 from functools import lru_cache
@@ -80,6 +81,7 @@ def 小清洗(q: 阵, l: int) -> 阵:
     return [*小小清洗(q, l)]
 
 
+jiba.setLogLevel(logging.INFO)
 def 切(s: str, 多=False):
     s = s[:10000]
     if 多:
@@ -119,9 +121,9 @@ def 坏(url: str) -> float:
     s = max(0, (len(url)-30)/200)
     if '.htm' in url or '.php' in url:
         s += (1-s) * 0.3
-    if len(url.rstrip('/').split('/')) > 3:
+    if url.rstrip('/').count('/') > 2:
         s += (1-s) * 0.1
-    if url.startswith('http://'):
+    if len(url) < 5 or url[4] == ':':     # startswith http:
         s += (1-s) * 0.3
     s = min(s, 0.9)
     return s
@@ -132,6 +134,10 @@ def 检测语言(s: str) -> str:
     global _lang_model
     if not _lang_model:
         import fasttext
+        try:
+            fasttext.FastText.eprint = lambda *args, **kwargs: None      # fasttext的警告居然关不掉
+        except Exception:
+            None
         _lang_model = fasttext.load_model('lid.176.ftz')
     lang = _lang_model.predict(s.replace('\n', ''))[0][0]
     assert lang.startswith('__label__')
