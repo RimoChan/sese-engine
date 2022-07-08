@@ -1,8 +1,11 @@
 import json
+import math
 from pathlib import Path
+from typing import Union
 
 import yaml
 
+from utils import 分解
 from 配置 import 存储位置
 
 
@@ -42,3 +45,20 @@ def 屏蔽词() -> set:
     if not path.is_file():
         return []
     return {*json.load(open(path, encoding='utf8'))}
+
+
+_繁荣表 = 繁荣表()
+def 荣(url: str) -> Union[int, float]:
+    s = 0
+    for i in 分解(url):
+        if t := _繁荣表.get(i):
+            l = math.log2(2+t*2) - 1
+        else:
+            l = 0
+        if s == 0:
+            if l == 0:
+                break
+            s = l
+        else:
+            s = l + math.log((s-l)/2+1)
+    return s

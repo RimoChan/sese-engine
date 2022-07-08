@@ -8,18 +8,19 @@ from typing import Tuple
 import flask
 from tqdm import tqdm
 
+from 信息 import 荣
 from 类 import 阵
 from 存储 import 索引空间
 from utils import netloc, json_loads, 小清洗, 好ThreadPoolExecutor
 
-from 配置 import 单键最多url, 单键最多相同域名url, 存储位置, 大清洗行数, 新增键需url数, 单键最多新增url
+from 配置 import 单键最多url, 单键最多相同域名url, 存储位置, 大清洗行数, 新增键需url数
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 app = flask.Flask(__name__)
 
 
-面板 = {x: tqdm(desc=x) for x in ['内存键数', '收到请求数', '丢弃行数']}
+面板 = {x: tqdm(desc=x) for x in ['内存键数', '收到请求数', '丢弃行数', '小清洗次数']}
 
 df = 索引空间(存储位置/'键')
 临时df = {}
@@ -62,7 +63,7 @@ def 低(k: str) -> float:
     if len(l) < 单键最多url:
         return -1
     else:
-        return min(0.1, sorted([v for v, url in l], reverse=True)[单键最多url-1])
+        return min(0.05, sorted([v for v, url in l], reverse=True)[单键最多url-1])
 
 
 @app.route('/l', methods=['POST'])
@@ -101,18 +102,13 @@ def 洗(item) -> Tuple[int, str]:
         if len(v) < 新增键需url数:
             return 0, '丢弃'
     z = 消重(tuple(v) + tuple(原v))
-    if random.random() < 0.05:
+    if random.random() < 0.02:
         z = 降解(z)
-    if len(z) > 单键最多url*1.1 or random.random() < 0.05:
-        zt = 小清洗(sorted(z, reverse=True), 单键最多相同域名url)
-        z1 = zt[:单键最多url]
-        z2 = [i for i in zt[单键最多url:] if i[0] > 0.1]
-        z2 = 小清洗(z2, 1)[:单键最多url]
-        z = z1 + z2
-    上限 = len(原v) + 单键最多新增url
-    if len(z) > 上限:
-        z = sorted(z, reverse=True)[:上限]
-    if len(z) > 30:
+    if len(z) > 单键最多url*1.1 or random.random() < 0.02:
+        面板['小清洗次数'].update(1)
+        zt = 小清洗(sorted(z, key=lambda x: x[0] * (1 + 荣(x[1])), reverse=True), 单键最多相同域名url)
+        z = zt[:单键最多url]
+    if len(z) > 30 and random.random() < 0.2:
         z = sorted(z, reverse=True, key=lambda x: x[1])  # 让压缩算法高兴
     df[k] = z
     diff = len(z) - len(原v)
@@ -129,14 +125,16 @@ def 洗(item) -> Tuple[int, str]:
 
 
 def 大清洗():
-    global 临时df, df
+    global 临时df
     pool = 好ThreadPoolExecutor(max_workers=8)
     try:
         _临时df = 临时df
         临时df = {}
         状态统计 = {}
         状态值统计 = {}
-        for i, 状态 in tqdm(pool.map(洗, _临时df.items()), ncols=70, desc='大清洗', total=len(_临时df)):
+        items = [*_临时df.items()]
+        random.shuffle(items)
+        for i, 状态 in tqdm(pool.map(洗, items), ncols=70, desc='大清洗', total=len(_临时df)):
             状态统计[状态] = 状态统计.get(状态, 0) + 1
             状态值统计[状态] = 状态值统计.get(状态, 0) + i
         print(f'\n\n\n\n大清洗好了。\n增加了{sum(状态值统计.values())}行。\n键状态: {状态统计}\n键状态值: {状态值统计}')

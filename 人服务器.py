@@ -9,8 +9,9 @@ import concurrent.futures
 from fnmatch import fnmatch
 from itertools import islice
 from functools import lru_cache
+from collections import Counter
 from urllib.parse import unquote
-from typing import List, Tuple, Optional, Iterator, Union
+from typing import List, Tuple, Optional, Iterator, Dict
 
 import flask
 import requests
@@ -35,26 +36,9 @@ app = flask.Flask(__name__)
 反向索引 = 索引空间(存储位置/'键')
 门 = 融合之门(存储位置/'门')
 
-繁荣表 = 信息.繁荣表()
 调整表 = 信息.调整表()
 屏蔽词 = 信息.屏蔽词()
 网站信息 = 融合之门(存储位置/'网站之门')
-
-
-def _荣(url: str) -> Union[int, float]:
-    s = 0
-    for i in 分解(url):
-        if t := 繁荣表.get(i):
-            l = math.log2(2+t*2) - 1
-        else:
-            l = 0
-        if s == 0:
-            if l == 0:
-                break
-            s = l
-        else:
-            s = l + math.log((s-l)/2+1)
-    return s
 
 
 @app.route('/search')
@@ -142,7 +126,7 @@ def _重复性(l: List[str]) -> Iterator[int]:
         s.add(i)
 
 
-def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
+def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[List[Tuple[float, str]], Dict[str, dict], int, Dict[str, int]]:
     记录 = {}
     默认值 = {}
     with 计时(f'取索引{keys}'):
@@ -158,6 +142,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
     with 计时(f'取域名{keys}'):
         候选 = [*记录.items()]
         locs = [netloc(url) for url, vs in 候选]
+        域名计数 = Counter(locs)
         if site:
             z = [(item, loc) for item, loc in zip(候选, locs) if fnmatch(loc, site) or fnmatch(loc, '*.'+site)]
             if not z:
@@ -165,7 +150,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
             else:
                 候选, locs = zip(*z)
     with 计时(f'荣{keys}'):
-        荣s = [1 + _荣(url)*反向链接权重 for url, vs in 候选]
+        荣s = [1 + 信息.荣(url)*反向链接权重 for url, vs in 候选]
     with 计时(f'初重{keys}'):
         for (url, vs), loc, 荣 in zip(候选, locs, 荣s):
             调整 = 调整表.get(loc, 1)
@@ -182,7 +167,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
     with 计时(f'初排序{keys}'):
         q = sorted([(v, k) for k, v in d.items()], reverse=True)
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=128)
-    
+
     坏词 = {*减权关键词}
     with 计时(f'网站信息{keys}'):
         def r(item):
@@ -220,12 +205,12 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None):
         q[:80] = [r2(v, k, h, x) for (v, k), h, x in zip(q[:80], 复, 续)]
     with 计时(f'重排序{keys}'):
         qq = [*islice(重排序(q), sli.start, sli.stop, sli.step)]
-    return qq, 记录, len(d)
+    return qq, 记录, len(d), 域名计数
 
 
 def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
     with 计时(f'初步查询{keys}'):
-        q, 记录, 总数 = 初步查询(keys, sli, site)
+        q, 记录, 总数, 域名计数 = 初步查询(keys, sli, site)
     res = []
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=len(q)+1)
     for (v, url), y in zip(q, pool.map(缓存摘要, [i[1] for i in q])):
@@ -269,6 +254,7 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
             '网址': unquote(url),
             '信息': msg,
             '相关性': {k: 记录[url].get(k, 0) for k in keys},
+            '相同域名个数': 域名计数.get(netloc(url)),
         })
     return res, 总数
 
