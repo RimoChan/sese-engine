@@ -213,8 +213,8 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             超息 = 缓存信息[超b]
             已访问次数2 = 超息.访问次数
             兴趣2 = 计算兴趣(超b, 已访问次数2)
-        繁荣 = min(30, 繁荣表.get(b, 0))
-        荣 = math.log2(2+繁荣) + 2
+        繁荣 = min(62, 繁荣表.get(b, 0))
+        荣 = math.log2(2+繁荣) + 1
         return (0.2+中文度*0.8) * (0.1+兴趣) * 质量 * (0.1+兴趣2) * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
