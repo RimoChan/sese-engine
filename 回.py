@@ -140,7 +140,9 @@ def 超融合(f: Iterable[Tuple[str, dict]], *, 同ip个数, 服务器个数, de
     for k, v in d.items():
         基k = k.split('/')[0]
         if v > 向量化阈值 and 基k in 向量:
-            cos = np.dot(向量[基k], 核) / (np.linalg.norm(向量[基k]) * 核长)
+            向量基k = 向量[基k].astype(np.float32)
+            cos = np.dot(向量基k, 核) / (np.linalg.norm(向量基k) * 核长)
+            assert cos < 1.01, '太大了，不行'
             d_cos[基k] = float(cos)
             新d[k] = max(v * (0.25 + cos*0.75), 向量化阈值)
         else:
