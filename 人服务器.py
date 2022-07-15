@@ -158,15 +158,13 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
             相关 = 1
             for key in keys:
                 vp = vs.get(key) or 默认值[key]
-                if vp > 0.2:
-                    vp = 0.2 + (vp - 0.2) / 2.2
-                if vp > 0.1:
-                    vp = 0.1 + (vp - 0.1) / 2.2
+                if vp > 0.06:
+                    vp = math.log((vp-0.06)*40+1) / 40 + 0.06
                 相关 *= vp
             d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, (1-不喜欢), 1, 1, 调整, 1, 1, 1
     with 计时(f'初排序{keys}'):
         q = sorted([(v, k) for k, v in d.items()], reverse=True)
-    pool = concurrent.futures.ThreadPoolExecutor(max_workers=128)
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=256)
 
     坏词 = {*减权关键词}
     with 计时(f'网站信息{keys}'):
@@ -185,7 +183,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
             词倍 = 1 - min(len({*词} & 坏词)*减权关键词权重, 0.5)
             vv = v[0]*语种倍*时间倍*词倍, v[1], v[2], v[3], 语种倍, v[5], v[6], 时间倍, v[8], 词倍
             return (vv, k)
-        q[:128] = [*pool.map(r, q[:128])]
+        q[:256] = [*pool.map(r, q[:256])]
     q.sort(reverse=True)
     with 计时(f'重复性{keys}'):
         def r2(v, k, h, x):
