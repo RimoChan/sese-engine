@@ -170,6 +170,8 @@ def 超吸(url: str) -> List[str]:
                 超息.访问次数 += 0.2
                 再装填(超b, 超息)
                 超网站信息[超b] = 超息
+            if len(href) > 100:
+                href = random.sample(href, 100)
             return href
     except Exception as e:
         tqdm_exception_logger(e)
@@ -215,14 +217,14 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(62, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 1
-        return (0.2+中文度*0.8) * (0.1+兴趣) * 质量 * (0.1+兴趣2) * (1-坏(url)) * 基本权重 * 荣
+        return (0.1+中文度) * min(0.05+兴趣, 0.05+兴趣2) * 质量 * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
     urls = [url for url, w in url_list]
     domains = {netloc(url) for url in urls} | {缩(url) for url in urls}
     pool = ThreadPoolExecutor(max_workers=16)
     缓存信息 = {k: v for k, v in zip(domains, pool.map(超网站信息.get, domains))}
-    a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//5+100))
+    a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//3+200))
     a = {url for url, w in a}
     res = 纯化(lambda url: tldextract.extract(url).domain, a, 爬取集中度)
     res_https = [i for i in res if i.startswith('https://')]
