@@ -1,5 +1,6 @@
 import json
 from collections import Counter
+from typing import List, Tuple
 
 from utils import 切
 
@@ -30,7 +31,7 @@ def qs(s):
     return d
 
 
-def 龙(title: str, description: str, text: str):
+def 龙(title: str, description: str, text: str) -> List[Tuple[str, float]]:
     全词 = qs(title), qs(description), qs(text)
     l = []
     for i in 全词:
