@@ -66,13 +66,13 @@ def 超源(条件: Optional[Callable] = None, *, 子域名个数, 模板个数) 
             continue
         if not v.get('链接'):
             continue
-        超b = 缩(k)
-        时间 = v.get('最后访问时间', 1648300000)
+        时间 = v.get('最后访问时间', 1640000000)
         过去天数 = (int(time.time()) - 时间) // (3600*24)
         if 过去天数 > 180:
             continue
         时间倍 = 0.99 ** 过去天数
         结构 = v.get('结构')
+        超b = 缩(k)
         个 = max(子域名个数.get(超b, 1), int(模板个数.get(结构, 1)*1.5))
         if 个 > 1000:
             if random.random() > 1000/个:
@@ -174,6 +174,7 @@ def 刷新():
     d = dict(sorted(d.items()))
 
     q = [v for k, v in d.items() if '/' not in k]
+    print(f'繁荣的网页个数: {len(d)}，繁荣的网页总能量: {sum(d.values())}')
     print(f'繁荣的域名个数: {len(q)}，繁荣的域名总能量: {sum(q)}')
 
     存档(存储位置/'繁荣.json', d)
