@@ -1,3 +1,5 @@
+import time
+import random
 import logging
 from functools import lru_cache
 from urllib.parse import urlparse
@@ -6,7 +8,7 @@ from typing import Optional, Tuple, Iterable, Dict, List
 from reppy.robots import Robots, AllowNone
 import requests
 
-from 配置 import 爬虫的名字
+from 配置 import 爬虫的名字, 爬虫冷却时间
 
 logging.getLogger('urllib3.connection').setLevel(logging.CRITICAL)  # urllib3太吵了
 logging.getLogger('urllib3.connectionpool').setLevel(logging.CRITICAL)
@@ -51,8 +53,20 @@ def _重定向表(resp) -> Iterable[Tuple[str, str]]:
             yield i.url, i.headers['Location']
 
 
+限流计时 = {}
+
+
 def 真爬(url, 乖=True, timeout=5, 大小限制=None) -> Tuple[str, str, Dict[str, str], str]:
+    global 限流计时
     q = urlparse(url)
+    if 乖:
+        now = time.time()
+        if now - 限流计时.get(q.netloc, 0) < 爬虫冷却时间:
+            time.sleep(爬虫冷却时间 * (0.5 + 0.5 * random.random()))
+            return 真爬(url, 乖, timeout, 大小限制)
+        限流计时[q.netloc] = now
+        if random.random() < 0.01:
+            限流计时 = {k: v for k, v in 限流计时.items() if now - v < 爬虫冷却时间 + 1}
     if 乖:
         rp = 萝卜(f'{q.scheme}://{q.netloc}')
         if not rp.allowed(url, 爬虫的名字):
