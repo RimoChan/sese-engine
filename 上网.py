@@ -28,7 +28,7 @@ from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构�
 门 = 融合之门(存储位置/'门')
 繁荣表 = 信息.繁荣表()
 队 = Queue(存储位置/'临时队列', autosave=True, maxsize=队列最大长度)
-面板 = {x: tqdm(desc=x) for x in ['访问url数', '访问成功url数', '获取域名基本信息次数', '发送队列长度', '发送次数', '发送失败次数']}
+面板 = {x: tqdm(desc=x) for x in ['访问url数', '访问成功url数', '获取域名基本信息次数', '获取词数', '获取词数(英文)', '发送队列长度', '发送次数', '发送失败次数']}
 
 
 def 真送(data):
@@ -73,6 +73,8 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, s
     if l:
         l = sorted(l, key=lambda x: x[1], reverse=True)[:单网页最多关键词]
         data = [真url, l]
+        面板['获取词数'].update(len(l))
+        面板['获取词数(英文)'].update(len([x for x in l if x[0].isascii()]))
         送(data)
     return r
 
@@ -171,7 +173,10 @@ def 超吸(url: str) -> List[str]:
                 再装填(超b, 超息)
                 超网站信息[超b] = 超息
             if len(href) > 100:
+                外href = [h for h in href if 缩(h) != 超b]
                 href = random.sample(href, 100)
+                if 外href:
+                    href += random.sample(外href, min(len(外href), 3))
             return href
     except Exception as e:
         tqdm_exception_logger(e)
@@ -185,9 +190,12 @@ def 纯化(f: Callable, a: Iterable[str], k: float) -> List[str]:
     random.shuffle(a)
     for url in a:
         d.setdefault(f(url), []).append(url)
+    上限 = 10
+    if len(d) > 1:
+        上限 = max(10, int(sum(sorted([int(len(v)**k) for v in d.values()])[:-1]) * 0.6))
     res = []
     for v in d.values():
-        sn = 1 + int(len(v)**k)
+        sn = 1 + min(上限, int(len(v)**k))
         res += v[:sn]
     random.shuffle(res)
     return res
