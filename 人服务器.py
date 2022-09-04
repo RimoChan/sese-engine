@@ -149,18 +149,28 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
                 候选, locs = [], []
             else:
                 候选, locs = zip(*z)
-    with 计时(f'荣{keys}'):
-        荣s = [1 + 信息.荣(url)*反向链接权重 for url, vs in 候选]
-    with 计时(f'初重{keys}'):
-        for (url, vs), loc, 荣 in zip(候选, locs, 荣s):
-            调整 = 调整表.get(loc, 1)
-            不喜欢 = 坏(url)
+        总数 = len(候选)
+    with 计时(f'相关性{keys}'):
+        相关s = []
+        for url, vs in 候选:
             相关 = 1
             for key in keys:
                 vp = vs.get(key) or 默认值[key]
                 if vp > 0.06:
                     vp = math.log((vp-0.06)*40+1) / 40 + 0.06
                 相关 *= vp
+            相关s.append(相关)
+        相关性阈值 = 0
+        if len(相关s) > sli.stop + 10:
+            相关性阈值 = sorted(相关s, reverse=True)[sli.stop + 10] / 10
+    with 计时(f'裁剪{keys}'):
+        候选, locs, 相关s = zip(*[(a, b, c) for a, b, c in zip(候选, locs, 相关s) if c > 相关性阈值])
+    with 计时(f'荣{keys}'):
+        荣s = [1 + 信息.荣(url)*反向链接权重 for url, vs in 候选]
+    with 计时(f'初重{keys}'):
+        for (url, vs), loc, 荣, 相关 in zip(候选, locs, 荣s, 相关s):
+            调整 = 调整表.get(loc, 1)
+            不喜欢 = 坏(url)
             d[url] = 相关*荣*(1-不喜欢)*调整, 相关, 荣, (1-不喜欢), 1, 1, 调整, 1, 1, 1, 1
     with 计时(f'初排序{keys}'):
         q = sorted([(v, k) for k, v in d.items()], reverse=True)
@@ -212,7 +222,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
         q[:80] = [r2(v, k, h, x) for (v, k), h, x in zip(q[:80], 复, 续)]
     with 计时(f'重排序{keys}'):
         qq = [*islice(重排序(q), sli.start, sli.stop, sli.step)]
-    return qq, 记录, len(d), 域名计数
+    return qq, 记录, 总数, 域名计数
 
 
 def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
