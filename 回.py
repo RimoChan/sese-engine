@@ -1,4 +1,5 @@
 import json
+import math
 import time
 import random
 import logging
@@ -7,7 +8,7 @@ from typing import Tuple, Dict, Optional, List, Iterable, Callable
 
 import numpy as np
 from tqdm import tqdm
-from utils import 分解, netloc
+from utils import 分解
 
 from 文 import 缩
 from 配置 import 存储位置
@@ -59,28 +60,48 @@ def 计数() -> Tuple[Dict[str, int], ...]:
     return 子域名个数, 模板个数, 同ip个数, 服务器个数, 关键词个数
 
 
+def 计算倍率(k, v, 子域名个数, 模板个数) -> float:
+    if not v.get('链接'):
+        return 0
+    时间 = v.get('最后访问时间', 1640000000)
+    过去天数 = (int(time.time()) - 时间) // (3600*24)
+    if 过去天数 > 180:
+        return 0
+    时间倍 = 0.99 ** 过去天数
+    结构 = v.get('结构')
+    超b = 缩(k)
+    个 = max(子域名个数.get(超b, 1), int(模板个数.get(结构, 1)*1.5))
+    if 个 > 1000:
+        if random.random() > 1000/个:
+            return 0
+        个 = 1000
+    域名倍 = 1 / ((max(个, 5)/5) ** 0.6)
+    倍 = 时间倍 * 域名倍
+    return 倍
+
+
 def 超源(条件: Optional[Callable] = None, *, 子域名个数, 模板个数) -> Iterable[Tuple[str, dict, float]]:
     网站之门 = 融合之门(存储位置/'网站之门')
     for k, v in 网站之门.items():
         if 条件 and not 条件(v):
             continue
-        if not v.get('链接'):
+        倍 = 计算倍率(k, v, 子域名个数, 模板个数)
+        if 倍 == 0:
             continue
-        时间 = v.get('最后访问时间', 1640000000)
-        过去天数 = (int(time.time()) - 时间) // (3600*24)
-        if 过去天数 > 180:
-            continue
-        时间倍 = 0.99 ** 过去天数
-        结构 = v.get('结构')
-        超b = 缩(k)
-        个 = max(子域名个数.get(超b, 1), int(模板个数.get(结构, 1)*1.5))
-        if 个 > 1000:
-            if random.random() > 1000/个:
-                continue
-            个 = 1000
-        域名倍 = 1 / ((max(个, 5)/5) ** 0.6)
-        倍 = 时间倍 * 域名倍
         yield k, v, 倍
+
+
+def 复源(d1: Dict[str, float], *, 子域名个数, 模板个数) -> Iterable[Tuple[str, dict, float]]:
+    网站之门 = 融合之门(存储位置/'网站之门')
+    for k, r in d1.items():
+        if '/' in k:
+            continue
+        if v := 网站之门.get(k):
+            倍 = 计算倍率(k, v, 子域名个数, 模板个数)
+            if 倍 == 0:
+                continue
+            真倍 = min(2, 倍 * math.log2(2+r))
+            yield k, v, 真倍
 
 
 def 超融合(f: Iterable[Tuple[str, dict]], *, 同ip个数, 服务器个数, desc) -> Dict[str, float]:
@@ -165,11 +186,13 @@ def 刷新():
 
     源1 = 超源(lambda x: x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数)
     d1 = 超融合(源1, 同ip个数=同ip个数, 服务器个数=服务器个数, desc='计算HTTPS反向链接')
+    源1a = 复源(d1, 子域名个数=子域名个数, 模板个数=模板个数)
+    d1a = 超融合(源1a, 同ip个数=同ip个数, 服务器个数=服务器个数, desc='回光返照')
     源2 = 超源(lambda x: not x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数)
     d2 = 超融合(源2, 同ip个数=同ip个数, 服务器个数=服务器个数, desc='计算HTTP反向链接')
 
-    ks = {*d1, *d2}
-    d = {k: d1.get(k, 0) + min(d1.get(k, 0)*0.5+d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
+    ks = {*d1, *d2, *d1a}
+    d = {k: d1.get(k, 0) + d1a.get(k, 0) + min(d1.get(k, 0)*0.5+d2.get(k, 0)*0.1, d2.get(k, 0)) for k in ks}
     d = {k: v for k, v in d.items() if v > 0.16}
     d = dict(sorted(d.items()))
 
@@ -182,7 +205,10 @@ def 刷新():
 
 if __name__ == '__main__':
     while True:
-        time.sleep((48 - datetime.datetime.now().hour + 2) * 3600)
+        now = datetime.datetime.now()
+        t = (48 - now.hour + 2) * 3600
+        print('进入休眠，下次预期启动时间:', str(now+datetime.timedelta(seconds=t)))
+        time.sleep(t)
         try:
             print('=======================\n刷新时间', datetime.datetime.now())
             刷新()
