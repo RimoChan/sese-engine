@@ -164,7 +164,8 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
         if len(相关s) > sli.stop + 10:
             相关性阈值 = sorted(相关s, reverse=True)[sli.stop + 10] / 10
     with 计时(f'裁剪{keys}'):
-        候选, locs, 相关s = zip(*[(a, b, c) for a, b, c in zip(候选, locs, 相关s) if c > 相关性阈值])
+        if 候选:
+            候选, locs, 相关s = zip(*[(a, b, c) for a, b, c in zip(候选, locs, 相关s) if c > 相关性阈值])
     with 计时(f'荣{keys}'):
         荣s = [1 + 信息.荣(url)*反向链接权重 for url, vs in 候选]
     with 计时(f'初重{keys}'):
@@ -240,18 +241,15 @@ def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
                 '标题': title,
                 '描述': 预览(keys, description),
                 '文本': 预览(keys, text),
-                '文本长度': len(text),
             }
         else:
             if g := 门.get(url):
-                title, description = g[:2]
-                text = ''
+                title, description, text = (g + [''])[:3]
                 print(f'从门中拿到了{url}')
                 msg = {
                     '标题': title,
                     '描述': 预览(keys, description),
-                    '文本': text,
-                    '文本长度': None,
+                    '文本': 预览(keys, text),
                 }
             else:
                 msg = None
