@@ -24,6 +24,7 @@ from rimo_storage import cache
 from utils import netloc, 切, 坏, 分解
 import 文
 import 信息
+from 网站 import 超网站信息
 from 存储 import 索引空间, 融合之门
 from 分析 import 分
 from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置, 权重每日衰减, 语种权重, 连续关键词权重, 反向链接权重, 减权关键词, 减权关键词权重, 人服务器端口
@@ -38,7 +39,6 @@ app = flask.Flask(__name__)
 
 调整表 = 信息.调整表()
 屏蔽词 = 信息.屏蔽词()
-网站信息 = 融合之门(存储位置/'网站之门')
 
 
 @app.route('/search')
@@ -48,7 +48,7 @@ def search():
     return resp
 
 
-_息 = lru_cache(maxsize=4096)(lambda b, _: 网站信息.get(b, {}))
+_息 = lru_cache(maxsize=4096)(lambda b, _: 超网站信息[b])
 息 = lambda b: _息(b, int(time.time())//(3600*24))
 
 
@@ -183,12 +183,12 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
         def r(item):
             v, k = item
             网站 = 息(netloc(k))
-            语种 = 网站.get('语种') or {}
-            词 = 网站.get('关键词') or []
+            语种 = 网站.语种
+            词 = 网站.关键词 or []
             中文度 = 语种.get('zh', 0)
             怪文度 = sum(语种.values()) - 语种.get('zh', 0) - 语种.get('en', 0) - 语种.get('ja', 0)
             语种倍 = 1 + 中文度*语种权重 - 怪文度*语种权重
-            时间 = 网站.get('最后访问时间', 1648000000)
+            时间 = 网站.最后访问时间 or 1648000000
             过去天数 = (现在 - 时间) // (3600*24)
             过去天数 = max(0, min(180, 过去天数-1))
             时间倍 = 权重每日衰减 ** 过去天数
