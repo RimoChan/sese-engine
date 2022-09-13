@@ -54,7 +54,7 @@ _息 = lru_cache(maxsize=4096)(lambda b, _: 网站信息.get(b, {}))
 
 def _search():
     try:
-        q = flask.request.args.get('q', '')
+        q = flask.request.args.get('q', '') or bytes.fromhex(flask.request.args.get('qh', '')).decode('utf8')
         kiss = []
         site = None
         for x in q.split():
