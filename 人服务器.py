@@ -26,7 +26,7 @@ import 文
 import 信息
 from 存储 import 索引空间, 融合之门
 from 分析 import 分
-from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置, 权重每日衰减, 语种权重, 连续关键词权重, 反向链接权重, 减权关键词, 减权关键词权重
+from 配置 import 使用在线摘要, 在线摘要限时, 单键最多url, 存储位置, 权重每日衰减, 语种权重, 连续关键词权重, 反向链接权重, 减权关键词, 减权关键词权重, 人服务器端口
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 threading.excepthook = lambda x: print(f'{x.thread} 遇到了exception: {repr(x.exc_value)}')
@@ -330,4 +330,4 @@ def 缓存摘要(url: str):
 
 
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=80)
+    serve(app, host='0.0.0.0', port=人服务器端口)
