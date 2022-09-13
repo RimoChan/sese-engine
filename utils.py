@@ -19,7 +19,10 @@ from 类 import 阵
 # urllib.parse.urlparse太慢了！
 def netloc(url: str) -> str:
     try:
-        return re.findall('//(.*?)(?=/|\?|$)', url)[0]
+        l = url.split('/')
+        a = l[2]
+        assert '?' not in a and ' ' not in a and l[0] in ('http:', 'https:') and l[1] == ''
+        return a
     except Exception:
         return urlparse(url).netloc
 
