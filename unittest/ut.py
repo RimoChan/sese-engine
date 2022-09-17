@@ -4,8 +4,10 @@ sys.path.append(str(Path(__file__).parent))
 import os
 os.chdir('..')
 
-import random
+import re
 import json
+import time
+import random
 from urllib.parse import urlparse
 
 import lzma
@@ -64,6 +66,26 @@ def 测netloc():
         if a != b:
             raise Exception(f'url={repr(i)}, 新={repr(a)}, 真={repr(b)}, urlparse={urlparse(i)}')
 测netloc()
+
+
+def 测netloc速度():
+    def 旧netloc(url: str) -> str:
+        try:
+            return re.findall('//(.*?)(?=/|\?|$)', url)[0]
+        except Exception:
+            return urlparse(url).netloc
+    start = time.time()
+    for i in urls:
+        netloc(i)
+    necloc用时 = time.time() - start
+    start = time.time()
+    for i in urls:
+        旧netloc(i)
+    旧necloc用时 = time.time() - start
+    print(f'{necloc用时=}, {旧necloc用时=}')
+    assert necloc用时 < 旧necloc用时
+for _ in range(3):
+    测netloc速度()
 
 
 def 测摘要():
