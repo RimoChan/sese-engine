@@ -21,7 +21,7 @@ def netloc(url: str) -> str:
     try:
         l = url.split('/')
         a = l[2]
-        assert '?' not in a and ' ' not in a and l[0] in ('http:', 'https:') and l[1] == ''
+        assert '?' not in a and ' ' not in a and '\n' not in a and '\r' not in a and l[0] in ('http:', 'https:') and l[1] == ''
         return a
     except Exception:
         return urlparse(url).netloc
