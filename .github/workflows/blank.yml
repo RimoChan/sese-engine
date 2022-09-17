@@ -15,5 +15,5 @@ jobs:
           python-version: 3.8
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: lunar_test
+      - name: unittest
         run: cd unittest && python ut.py

@@ -62,7 +62,7 @@ def 测netloc():
         a = netloc(i)
         b = urlparse(i).netloc
         if a != b:
-            raise Exception(f'url={i}, 新={a}, 真={b}, urlparse={urlparse(i)}')
+            raise Exception(f'url={repr(i)}, 新={repr(a)}, 真={repr(b)}, urlparse={urlparse(i)}')
 测netloc()
 
 
