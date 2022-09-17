@@ -87,10 +87,18 @@ def 小清洗(q: 阵, l: int) -> 阵:
 jiba.setLogLevel(logging.INFO)
 def 切(s: str, 多=False):
     s = s[:10000]
-    if 多:
-        return jiba.lcut_for_search(s)
-    else:
-        return jiba.lcut(s)
+    l = []
+    for i in s.split():
+        try:
+            assert i.encode('ascii').isalnum()
+        except (UnicodeEncodeError, AssertionError):
+            if 多:
+                l += jiba.lcut_for_search(i)
+            else:
+                l += jiba.lcut(i)
+        else:
+            l.append(i)
+    return l
 
 
 _tl = {}
