@@ -1,0 +1,19 @@
+name: CI
+on:
+  push:
+    branches: [ slave ]
+  pull_request:
+    branches: [ slave ]
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2.2.2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: lunar_test
+        run: cd unittest && python ut.py
