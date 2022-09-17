@@ -17,9 +17,6 @@ def 分(s, 多=True) -> List[str]:
 with open('data/标点符号.json', encoding='utf8') as f:
     for i in json.load(f):
         停词表.add(i.lower())
-with open('data/en_stopwords.json', encoding='utf8') as f:
-    for i in json.load(f):
-        停词表.add(i.lower())
 
 
 def qs(s, w=1) -> Dict[str, float]:
