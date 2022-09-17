@@ -163,8 +163,7 @@ def 分解(url: str):
         url = url[7:]
     else:
         return
-    url = url.replace('?', '/')
-    url = url.replace('#', '/')
+    url = url.replace('?', '/').replace('#', '/')
     if url.endswith('/'):
         url = url[:-1]
     if not url or url[0] in ' /%':
