@@ -110,4 +110,12 @@ for i in ['https://docs.python.org/', 'https://librian.net/', 'https://sese.yyj.
     测切(i)
 
 
+def 测import():
+    import 收获服务器
+    import 人服务器
+    import 上网
+    import 回
+测import()
+
+
 print('没问题了！')
