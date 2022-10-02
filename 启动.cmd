@@ -1,4 +1,8 @@
-start "ÊÕ»ñ·şÎñÆ÷" cmd /c "for /l %%a in (0,0,1) do python ÊÕ»ñ·şÎñÆ÷.py"
-start "ÈË·şÎñÆ÷" cmd /c "python ÈË·şÎñÆ÷.py & pause"
-start "ÉÏÍø" cmd /c "for /l %%a in (0,0,1) do python ÉÏÍø.py"
-start "»Ø" cmd /c "python »Ø.py & pause"
+#set http_proxy=127.0.0.1:20171
+#set https_proxy=127.0.0.1:20171
+set no_proxy=localhost,127.0.0.1
+
+start "æ”¶è·æœåŠ¡å™¨" cmd /c "for /l %%a in (0,0,1) do python æ”¶è·æœåŠ¡å™¨.py"
+start "äººæœåŠ¡å™¨" cmd /c "python äººæœåŠ¡å™¨.py & pause"
+start "ä¸Šç½‘" cmd /c "for /l %%a in (0,0,1) do python ä¸Šç½‘.py"
+start "å›" cmd /c "python å›.py & pause"
