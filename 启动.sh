@@ -1,5 +1,11 @@
 #!/bin/sh
 
+export http_proxy=http://127.0.0.1:3128
+
+export https_proxy=http://127.0.0.1:3128
+
+export no_proxy=localhost,127.0.0.1
+
 TMUX_SESSION_NAME=sese_engine
 
 which tmux &> /dev/null
