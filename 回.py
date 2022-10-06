@@ -48,16 +48,13 @@ def 计数() -> Tuple[Dict[str, int], ...]:
         if ip := v.get('ip'):
             ip_str = ip字符串(ip)
             同ip个数[ip_str] = 同ip个数.get(ip_str, 0) + 1
-        for 词 in v.get('关键词') or ():
-            关键词个数[词] = 关键词个数.get(词, 0) + 1
     print(f'一级域名个数: {len(子域名个数)}')
     print(f'字段覆盖量: {字段覆盖量}')
     子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 4}
     模板个数 = {k: v for k, v in 模板个数.items() if v >= 4}
     同ip个数 = {k: v for k, v in 同ip个数.items() if v >= 4}
     服务器个数 = {k: v for k, v in 服务器个数.items() if v >= 4}
-    关键词个数 = {k: v for k, v in 关键词个数.items() if v >= 4}
-    return 子域名个数, 模板个数, 同ip个数, 服务器个数, 关键词个数
+    return 子域名个数, 模板个数, 同ip个数, 服务器个数
 
 
 def 计算倍率(k, v, 子域名个数, 模板个数) -> float:
@@ -176,13 +173,23 @@ def 存档(path, data):
     open(path, 'w', encoding='utf8').write(json.dumps(data, ensure_ascii=False, indent=2))
 
 
+def 词统计(f: Iterable[Tuple[str, dict]]) -> Dict[str, float]:
+    关键词个数 = {}
+    for i, (k, v, 倍) in tqdm(enumerate(f), desc='词统计'):
+        if (i+1) % 50_0000 == 0:
+            关键词个数 = {k: v for k, v in 关键词个数.items() if v >= 1}
+        for 词 in v.get('关键词') or ():
+            关键词个数[词] = 关键词个数.get(词, 0) + 倍
+    关键词个数 = {k: int(v) for k, v in 关键词个数.items() if v >= 4}
+    return 关键词个数
+
+
 def 刷新():
-    子域名个数, 模板个数, 同ip个数, 服务器个数, 关键词个数 = 计数()
+    子域名个数, 模板个数, 同ip个数, 服务器个数 = 计数()
     存档(存储位置/'子域名个数.json', 子域名个数)
     存档(存储位置/'模板个数.json', 模板个数)
     存档(存储位置/'同ip个数.json', 同ip个数)
     存档(存储位置/'服务器个数.json', 服务器个数)
-    存档(存储位置/'关键词个数.json', 关键词个数)
 
     源1 = 超源(lambda x: x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数)
     d1 = 超融合(源1, 同ip个数=同ip个数, 服务器个数=服务器个数, desc='计算HTTPS反向链接')
@@ -201,6 +208,9 @@ def 刷新():
     print(f'繁荣的域名个数: {len(q)}，繁荣的域名总能量: {sum(q)}')
 
     存档(存储位置/'繁荣.json', d)
+
+    关键词个数 = 词统计(超源(lambda x: x.get('https可用'), 子域名个数=子域名个数, 模板个数=模板个数))
+    存档(存储位置/'关键词个数.json', 关键词个数)
 
 
 if __name__ == '__main__':
