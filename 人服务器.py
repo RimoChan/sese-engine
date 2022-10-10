@@ -13,6 +13,7 @@ from collections import Counter
 from urllib.parse import unquote
 from typing import List, Tuple, Optional, Iterator, Dict
 
+import jieba
 import flask
 import requests
 import Levenshtein
@@ -281,7 +282,7 @@ def 预览(k, text) -> str:
 def _预览(k, text, limit) -> str:
     窗口长 = 32
     最后出现位置 = {x: -1 for x in k}
-    c = 切(text[:limit])
+    c = jieba.lcut(text[:limit])
     best = (0, 0)
     for i, s in enumerate(c):
         s = s.lower()
