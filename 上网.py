@@ -11,9 +11,10 @@ from typing import List, Tuple, Iterable, Callable, Dict
 
 import requests
 import tldextract
-from tqdm import tqdm
+import prometheus_client
 from persistqueue import Queue
 
+from 打点 import tqdm, tqdm面板, 计时打点, 直方图打点
 import 分析
 import 信息
 from 文 import 缩, 摘要
@@ -23,12 +24,14 @@ from 配置 import 爬取线程数, 爬取集中度, 单网页最多关键词, �
 from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构特征
 
 
-队列最大长度 = 300000
+面板 = tqdm面板(['访问url数','访问成功url数', '获取域名基本信息次数', '获取词数', '获取词数(英文)', '发送队列长度', '发送次数', '发送失败次数', '爬取线程数', '当前epoch进度'])
+繁荣打点 = 直方图打点('访问url繁荣', [0, 0.1, 0.3, 0.7, 1.5, 3.1, 6.3, 12, 25, 50, 100, 200, 400, 800, 1600, float("inf")])
+prometheus_client.start_http_server(14950)
 
 门 = 融合之门(存储位置/'门')
 繁荣表 = 信息.繁荣表()
+面板['发送队列长度'].total = 队列最大长度 = 300000
 队 = Queue(存储位置/'临时队列', autosave=True, maxsize=队列最大长度)
-面板 = {x: tqdm(desc=x) for x in ['访问url数', '访问成功url数', '获取域名基本信息次数', '获取词数', '获取词数(英文)', '发送队列长度', '发送次数', '发送失败次数']}
 
 
 def 真送(data):
@@ -56,6 +59,7 @@ def 送(data):
         面板['发送队列长度'].refresh()
 
 
+@计时打点
 def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, str]:
     r = 摘要(url, timeout=10)
     if len(url) >= 250:
@@ -123,7 +127,12 @@ def 域名基本信息(域名: str) -> Tuple[float, str, List[str], bool, str, s
 
 def 超吸(url: str) -> List[str]:
     面板['访问url数'].update(1)
+    面板['当前epoch进度'].update(1)
     try:
+        try:
+            繁荣打点.observe(繁荣表.get(netloc(url), 0))
+        except Exception as e:
+            tqdm_exception_logger(e)
         try:
             title, description, text, href, 真url, 重定向表, raw, 服务器类型 = 摘(url)
         except Exception as e:
@@ -225,6 +234,12 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(62, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 1
+        if b in ('zh.wikipedia.org', 'baike.baidu.com', 'zh.moegirl.org.cn'):
+            质量 = 1.8
+        if b in ('www.12377.cn', 'www.beian.gov.cn', 'weibo.com', 'www.weibo.com'):
+            质量 = 0.3
+        if b in ('twitter.com'):
+            质量 = 0.5
         return (0.1+中文度) * min(0.05+兴趣, 0.05+兴趣2) * 质量 * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
@@ -250,10 +265,15 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
 def bfs(start: str, epoch=100):
     吸过 = set()
     q = [start]
-    for ep in tqdm(range(epoch), ncols=60):
+    for ep in tqdm(range(epoch), ncols=60, desc='epoch'):
         吸过 |= {*q}
         新q = []
         线程数 = int((1.5-(队.qsize() / 队列最大长度))/1.5 * 爬取线程数)
+        面板['爬取线程数'].n = 线程数
+        面板['爬取线程数'].total = 爬取线程数
+        面板['爬取线程数'].refresh()
+        面板['当前epoch进度'].update(-面板['当前epoch进度'].n)
+        面板['当前epoch进度'].total = len(q)
         for href in ThreadPoolExecutor(max_workers=线程数).map(超吸, q):
             n = len(href)
             for url in href:

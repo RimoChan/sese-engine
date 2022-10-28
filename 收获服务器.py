@@ -6,8 +6,9 @@ from functools import lru_cache
 from typing import Tuple
 
 import flask
-from tqdm import tqdm
+import prometheus_client
 
+from 打点 import tqdm, tqdm面板, 直方图打点
 from 信息 import 荣
 from 类 import 阵
 from 存储 import 索引空间
@@ -20,7 +21,11 @@ logging.getLogger('werkzeug').setLevel(logging.ERROR)
 app = flask.Flask(__name__)
 
 
-面板 = {x: tqdm(desc=x) for x in ['内存键数', '收到请求数', '丢弃行数', '小清洗次数']}
+面板 = tqdm面板(['内存键数', '收到请求数', '丢弃行数', '内存行数', '小清洗次数', '大清洗索引数'])
+面板['内存行数'].total = 大清洗行数
+索引行数打点 = 直方图打点('索引行数', [2, 7, 16, 33, 63, 118, 216, 393, 711, 1284, 2316, 4172, 7514, 13530, 24358, 43848])
+索引增加行数打点 = 直方图打点('索引增加行数打点', [-1, 0, 1, 3, 7, 12, 19, 31, 48, 73, 112, 169, 256, 386, 580, 872, 1310])
+prometheus_client.start_http_server(14951)
 
 df = 索引空间(存储位置/'键')
 临时df = {}
@@ -85,8 +90,9 @@ def l():
     面板['内存键数'].refresh()
     大清.acquire()
     偏执 += 1
-    if (偏执+1) % 10000 == 0:
+    if (偏执+1) % 1000 == 0:
         内存行数 = sum([len(临时df[k]) for k in [*临时df]])
+        面板['内存行数'].update(内存行数-面板['内存行数'].n)
         if 内存行数 > 大清洗行数:
             偏执 = 0
             大清洗()
@@ -95,12 +101,12 @@ def l():
     return 'ok'
 
 
-def 洗(item) -> Tuple[int, str]:
+def 洗(item) -> Tuple[int, int, str]:
     k, v = item
     原v = df.get(k, [])
     if not 原v:
         if len(v) < 新增键需url数:
-            return 0, '丢弃'
+            return 0, 0, '丢弃'
     z = 消重(tuple(v) + tuple(原v))
     if random.random() < 0.02:
         z = 降解(z)
@@ -121,7 +127,7 @@ def 洗(item) -> Tuple[int, str]:
         状态 = '不变'
     elif diff < 0:
         状态 = '变短'
-    return diff, 状态
+    return len(z), diff, 状态
 
 
 def 大清洗():
@@ -134,9 +140,13 @@ def 大清洗():
         状态值统计 = {}
         items = [*_临时df.items()]
         random.shuffle(items)
-        for i, 状态 in tqdm(pool.map(洗, items), ncols=70, desc='大清洗', total=len(_临时df)):
+        for l, i, 状态 in tqdm(pool.map(洗, items), ncols=70, desc='大清洗', total=len(_临时df)):
             状态统计[状态] = 状态统计.get(状态, 0) + 1
             状态值统计[状态] = 状态值统计.get(状态, 0) + i
+            面板['大清洗索引数'].update(i)
+            if 状态 != '丢弃':
+                索引行数打点.observe(l)
+                索引增加行数打点.observe(i)
         print(f'\n\n\n\n大清洗好了。\n增加了{sum(状态值统计.values())}行。\n键状态: {状态统计}\n键状态值: {状态值统计}')
     except Exception as e:
         print('完蛋了！')

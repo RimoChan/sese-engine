@@ -17,3 +17,5 @@ Levenshtein==0.18.1
 orjson==3.6.5
 persist-queue==0.8.0
 numpy==1.22.2
+pypinyin==0.47.1
+prometheus-client==0.15.0
