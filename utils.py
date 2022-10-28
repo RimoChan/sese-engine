@@ -102,7 +102,12 @@ def 切(s: str, 多=False):
 
 
 _tl = {}
+_count = None
 def tqdm_exception_logger(e, log_path=None):
+    global _count
+    if _count is None:
+        _count = tqdm(desc='错误总数', ncols=60)
+    _count.update(1)
     c = type(e)
     s = c.__name__
     if c.__module__ != 'builtins':
