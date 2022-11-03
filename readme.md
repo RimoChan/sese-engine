@@ -12,7 +12,7 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
 
 数据即未来，我们的未来要掌握在自己手中。
 
-<img align='right' src='https://upyun.yunyoujun.cn/images/sese-rimo-and-xiao-yun.png' width='320px'>
+<img align='right' src='https://sese.yyj.moe/sese-rimo-and-xiao-yun.png' width='320px'>
 
 
 ## 测试环境
@@ -48,6 +48,16 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
 然后前端的仓库在这里: [YunYouJun/sese-engine-ui](https://github.com/YunYouJun/sese-engine-ui)。前端怎么部署呢，去看看云游君怎么说吧。
 
 如果你想用docker部署的话，也可以参照: [xiongnemo/sese-engine-docker](https://github.com/xiongnemo/sese-engine-docker)。
+
+## 可视化
+
+默认情况下，终端上会显示一些简要指标，如果你想知道更详细的服务状态的话，可以通过赠送<sub>(?)</sub>的Grafana仪表盘查看。
+
+Grafana需要单独接入，方法可以参考这里: [接入Grafana](./grafana/)
+
+它大概长这样:
+
+![./grafana/example.webp](./grafana/example.webp)
 
 
 ## 代价
