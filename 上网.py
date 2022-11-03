@@ -7,7 +7,7 @@ import hashlib
 import threading
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Tuple, Iterable, Callable, Dict
+from typing import List, Tuple, Iterable, Callable, Dict, Hashable
 
 import requests
 import tldextract
@@ -193,12 +193,12 @@ def 超吸(url: str) -> List[str]:
         return []
 
 
-def 纯化(f: Callable, a: Iterable[str], k: float) -> List[str]:
+def 纯化(hash_f: Callable[[str], Hashable], a: Iterable[str], k: float) -> List[str]:
     d = {}
     a = [*a]
     random.shuffle(a)
     for url in a:
-        d.setdefault(f(url), []).append(url)
+        d.setdefault(hash_f(url), []).append(url)
     上限 = 10
     if len(d) > 1:
         上限 = max(10, int(sum(sorted([int(len(v)**k) for v in d.values()])[:-1]) * 0.6))
@@ -234,12 +234,6 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(62, 繁荣表.get(b, 0))
         荣 = math.log2(2+繁荣) + 1
-        if b in ('zh.wikipedia.org', 'baike.baidu.com', 'zh.moegirl.org.cn'):
-            质量 = 1.8
-        if b in ('www.12377.cn', 'www.beian.gov.cn', 'weibo.com', 'www.weibo.com'):
-            质量 = 0.3
-        if b in ('twitter.com'):
-            质量 = 0.5
         return (0.1+中文度) * min(0.05+兴趣, 0.05+兴趣2) * 质量 * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
         url_list = random.sample(url_list, 10_0000)
@@ -262,19 +256,24 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
 打点 = []
 
 
+def _计算线程数():
+    return (1.4-(队.qsize() / 队列最大长度))/1.4 * 爬取线程数
+
+
 def bfs(start: str, epoch=100):
     吸过 = set()
     q = [start]
+    线程数 = _计算线程数()
     for ep in tqdm(range(epoch), ncols=60, desc='epoch'):
         吸过 |= {*q}
         新q = []
-        线程数 = int((1.5-(队.qsize() / 队列最大长度))/1.5 * 爬取线程数)
+        线程数 = sorted([线程数 * 0.85 + _计算线程数() * 0.15, _计算线程数() + 2, _计算线程数() - 2])[1]
         面板['爬取线程数'].n = 线程数
         面板['爬取线程数'].total = 爬取线程数
         面板['爬取线程数'].refresh()
         面板['当前epoch进度'].update(-面板['当前epoch进度'].n)
         面板['当前epoch进度'].total = len(q)
-        for href in ThreadPoolExecutor(max_workers=线程数).map(超吸, q):
+        for href in ThreadPoolExecutor(max_workers=round(线程数)).map(超吸, q):
             n = len(href)
             for url in href:
                 if url not in 吸过:
