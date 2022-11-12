@@ -8,6 +8,7 @@ from functools import lru_cache
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, Tuple
+from prometheus_client import Counter
 
 import lxml.html
 import jieba as jiba
@@ -103,6 +104,7 @@ def 切(s: str, 多=False):
 
 _tl = {}
 _count = None
+_prometheus_counter = Counter('errors', 'errors', labelnames=['type'])
 def tqdm_exception_logger(e, log_path=None):
     global _count
     if _count is None:
@@ -112,6 +114,7 @@ def tqdm_exception_logger(e, log_path=None):
     s = c.__name__
     if c.__module__ != 'builtins':
         s = c.__module__ + '.' + s
+    _prometheus_counter.labels(type=s).inc(1)
     try:
         f = e.__traceback__.tb_frame.f_globals["__file__"]
         l = e.__traceback__.tb_lineno
