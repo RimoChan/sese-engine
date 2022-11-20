@@ -7,12 +7,16 @@ import datetime
 from typing import Tuple, Dict, Optional, List, Iterable, Callable
 
 import numpy as np
-from tqdm import tqdm
-from utils import 分解
+import prometheus_client
 
+from utils import 分解
+from 打点 import tqdm
 from 文 import 缩
 from 配置 import 存储位置
 from 存储 import 融合之门
+
+
+prometheus_client.start_http_server(14952)
 
 
 def ip字符串(ip_list: Optional[List[str]]) -> str:
@@ -29,6 +33,7 @@ def 计数() -> Tuple[Dict[str, int], ...]:
     同ip个数 = {}
     字段覆盖量 = {}
     关键词个数 = {}
+    一级域名个数 = tqdm(desc='一级域名个数')
     for i, (k, v) in tqdm(enumerate(iter(网站之门.items())), desc='计数'):
         if (i+1) % 100_0000 == 0:
             模板个数 = {k: v for k, v in 模板个数.items() if v > 1}
@@ -40,6 +45,7 @@ def 计数() -> Tuple[Dict[str, int], ...]:
                 字段覆盖量[a] = 字段覆盖量.get(a, 0) + 1
         超b = 缩(k)
         子域名个数[超b] = 子域名个数.get(超b, 0) + 1
+        一级域名个数.update(len(子域名个数)-一级域名个数.n)
         if t := v.get('结构'):
             模板个数[t] = 模板个数.get(t, 0) + 1
         if t := v.get('服务器类型'):
@@ -48,7 +54,6 @@ def 计数() -> Tuple[Dict[str, int], ...]:
         if ip := v.get('ip'):
             ip_str = ip字符串(ip)
             同ip个数[ip_str] = 同ip个数.get(ip_str, 0) + 1
-    print(f'一级域名个数: {len(子域名个数)}')
     print(f'字段覆盖量: {字段覆盖量}')
     子域名个数 = {k: v for k, v in 子域名个数.items() if v >= 4}
     模板个数 = {k: v for k, v in 模板个数.items() if v >= 4}

@@ -4,10 +4,10 @@ import random
 
 from tqdm import tqdm as _tqdm
 from pypinyin import pinyin, Style
-from prometheus_client import Gauge, Histogram
+from prometheus_client import Gauge, Histogram, Counter, REGISTRY
 
 
-_gauge_dict = {}
+_collector_dict = {}
 _id = random.randint(2**60, 2**62)
 
 
@@ -16,14 +16,16 @@ def _翻译(s):
         q = s
     else:
         q = '_'.join([i[0] for i in pinyin(s, style=Style.NORMAL)])
-    return q.replace('(', '_').replace(')', '_').replace('（', '_').replace('）', '_').replace(' ', '_')
+    q = q.replace('(', '_').replace(')', '_').replace('（', '_').replace('）', '_').replace(' ', '_')
+    assert q.isascii(), '怪欸'
+    return q
 
 
 def _display(self, *li, **d):
     if self.metrics_name:
-        _gauge_dict[self.metrics_name].set(self.n)
+        _collector_dict[self.metrics_name].set(self.n)
         if self.total:
-            _gauge_dict[self.metrics_name_max].set(self.total)
+            _collector_dict[self.metrics_name_max].set(self.total)
     return _tqdm.display(self, *li, **d)
 
 
@@ -31,11 +33,11 @@ def tqdm(*li, **d):
     self = _tqdm(*li, **d)
     if self.desc:
         self.metrics_name = _翻译(self.desc)
-        if self.metrics_name not in _gauge_dict:
-            _gauge_dict[self.metrics_name] = Gauge(self.metrics_name, self.metrics_name, labelnames=['sese_id']).labels(sese_id=_id)
+        if self.metrics_name not in _collector_dict:
+            _collector_dict[self.metrics_name] = Gauge(self.metrics_name, self.metrics_name, labelnames=['sese_id']).labels(sese_id=_id)
         self.metrics_name_max = _翻译(self.desc + '马克思')
-        if self.metrics_name_max not in _gauge_dict:
-            _gauge_dict[self.metrics_name_max] = Gauge(self.metrics_name_max, self.metrics_name_max, labelnames=['sese_id']).labels(sese_id=_id)
+        if self.metrics_name_max not in _collector_dict:
+            _collector_dict[self.metrics_name_max] = Gauge(self.metrics_name_max, self.metrics_name_max, labelnames=['sese_id']).labels(sese_id=_id)
         self.display = types.MethodType(_display, self)
     return self
 

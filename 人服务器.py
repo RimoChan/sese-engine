@@ -17,11 +17,13 @@ import jieba
 import flask
 import requests
 import Levenshtein
+import prometheus_client
 from waitress import serve
 
 from rimo_utils.计时 import 计时
 from rimo_storage import cache
 
+from 打点 import 计时打点
 from utils import netloc, 切, 坏, 分解
 import 文
 import 信息
@@ -34,6 +36,7 @@ logging.getLogger('werkzeug').setLevel(logging.ERROR)
 threading.excepthook = lambda x: print(f'{x.thread} 遇到了exception: {repr(x.exc_value)}')
 
 app = flask.Flask(__name__)
+prometheus_client.start_http_server(14953)
 
 反向索引 = 索引空间(存储位置/'键')
 门 = 融合之门(存储位置/'门')
@@ -227,6 +230,7 @@ def 初步查询(keys: list, sli: slice, site: Optional[str] = None) -> Tuple[Li
     return qq, 记录, 总数, 域名计数
 
 
+@计时打点
 def 查询(keys: list, sli=slice(0, 10), site: Optional[str] = None):
     with 计时(f'初步查询{keys}'):
         q, 记录, 总数, 域名计数 = 初步查询(keys, sli, site)
