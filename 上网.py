@@ -26,6 +26,7 @@ from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构�
 
 面板 = tqdm面板(['访问url数','访问成功url数', '获取域名基本信息次数', '获取词数', '获取词数(英文)', '发送队列长度', '发送次数', '发送失败次数', '爬取线程数', '当前epoch进度'])
 繁荣打点 = 直方图打点('访问url繁荣', [0, 0.1, 0.3, 0.7, 1.5, 3.1, 6.3, 12, 25, 50, 100, 200, 400, 800, 1600, float("inf")])
+url域名分布打点 = 直方图打点('url域名分布', [1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 194, 291, 437, 656, float("inf")])
 prometheus_client.start_http_server(14950)
 
 门 = 融合之门(存储位置/'门')
@@ -65,12 +66,13 @@ def 摘(url: str) -> Tuple[str, str, str, List[str], str, Dict[str, str], str, s
     if len(url) >= 250:
         return r
     title, description, text, href, 真url, 重定向表, raw, 服务器类型 = r
-    重定向表 = {k: v for k, v in 重定向表.items() if k == f'https://{netloc(k)}/'}
     if 重定向表:
         for k, v in 重定向表.items():
             b = netloc(k)
             息 = 超网站信息[b]
             息.重定向[k] = v
+            if len(息.重定向) > 50:
+                息.重定向 = dict(sorted(息.重定向.items(), key=lambda x: random.random() - (x[0] == f'https://{b}/'))[:40])
             超网站信息[b] = 息
     门[真url] = title, description[:256], text[:256], int(time.time())
     l = 分析.龙(title, description, text)
@@ -165,8 +167,9 @@ def 超吸(url: str) -> List[str]:
                     息.服务器类型 = 息.服务器类型[-5:]
                 if 息.访问次数 < 10 or random.random() < 0.1:
                     语种 = 检测语言(' '.join((title, description, text)))
-                    td = {k: v*0.9 for k, v in 息.语种.items()}
-                    td[语种] = td.get(语种, 0) + 0.1
+                    更新强度 = min(0.2, 1 / (息.访问次数**0.5))
+                    td = {k: v*(1-更新强度) for k, v in 息.语种.items()}
+                    td[语种] = td.get(语种, 0) + 更新强度
                     息.语种 = td
                     外href = [h for h in href if 缩(h) != 超b]
                     息.链接 += random.sample(外href, min(10, len(外href)))
@@ -233,6 +236,8 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
             已访问次数2 = 超息.访问次数
             兴趣2 = 计算兴趣(超b, 已访问次数2)
         繁荣 = min(62, 繁荣表.get(b, 0))
+        if 繁荣 > 0:
+            繁荣 += 0.5
         荣 = math.log2(2+繁荣) + 1
         return (0.1+中文度) * min(0.05+兴趣, 0.05+兴趣2) * 质量 * (1-坏(url)) * 基本权重 * 荣
     if len(url_list) > 10_0000:
@@ -257,7 +262,7 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
 
 
 def _计算线程数():
-    return (1.4-(队.qsize() / 队列最大长度))/1.4 * 爬取线程数
+    return (1.2-(队.qsize() / 队列最大长度))/1.2 * 爬取线程数
 
 
 def bfs(start: str, epoch=100):
@@ -267,13 +272,13 @@ def bfs(start: str, epoch=100):
     for ep in tqdm(range(epoch), ncols=60, desc='epoch'):
         吸过 |= {*q}
         新q = []
-        线程数 = sorted([线程数 * 0.85 + _计算线程数() * 0.15, _计算线程数() + 2, _计算线程数() - 2])[1]
+        线程数 = sorted([线程数 * 0.9 + _计算线程数() * 0.1, _计算线程数() + 2, _计算线程数() - 2])[1]
         面板['爬取线程数'].n = 线程数
         面板['爬取线程数'].total = 爬取线程数
         面板['爬取线程数'].refresh()
         面板['当前epoch进度'].update(-面板['当前epoch进度'].n)
         面板['当前epoch进度'].total = len(q)
-        for href in ThreadPoolExecutor(max_workers=round(线程数)).map(超吸, q):
+        for href in ThreadPoolExecutor(max_workers=max(1, round(线程数))).map(超吸, q):
             n = len(href)
             for url in href:
                 if url not in 吸过:
@@ -285,6 +290,10 @@ def bfs(start: str, epoch=100):
         q = 重整(新q)
 
         c = Counter([netloc(x) for x in q])
+        for i in url域名分布打点._buckets:
+            i.set(0)
+        for v in c.values():
+            url域名分布打点.observe(v)
         超c = Counter([缩(x) for x in q])
         打点.append({
             'ep': ep,
