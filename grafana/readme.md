@@ -16,7 +16,7 @@ sese-engine内置了prometheus-client，所以要看监控要用到Grafana和Pro
 
 注册好帐号之后，点击「+ Connect data」添加一个数据源，选择「Hosted Prometheus metrics」。
 
-接下来根据网页上的提示，一步步填写即可。其中有一个它让你复制配置到本地的，那个地方有`- targets: ['localhost:9100']`，得把它换成`- targets: ['localhost:14950', 'localhost:14951']`，这两个是sese-engine的prometheus端口。
+接下来根据网页上的提示，一步步填写即可。其中有一个它让你复制配置到本地的，那个地方有`- targets: ['localhost:9100']`，得把它换成`- targets: ['localhost:14950', 'localhost:14951', 'localhost:14952', 'localhost:14953']`，这4个是sese-engine的4个进程的prometheus端口。
 
 
 ## 3. 添加面板
