@@ -47,7 +47,7 @@ def tqdm面板(l: list):
 
 
 def 计时打点(f):
-    buckets = (.05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0, float("inf"))
+    buckets = 0.01, 0.02, 0.03, 0.05, 0.07, 0.09, 0.12, 0.15, 0.18, 0.22, 0.26, 0.31, 0.37, 0.44, 0.52, 0.61, 0.71, 0.83, 0.96, 1.12, 1.30, 1.51, 1.74, 2.02, 2.33, 2.69, 3.11, 3.58, 4.13, 4.76, 5.49, 6.32, 7.28, 8.39, 9.66, 11.12, float("inf")
     h = Histogram(_翻译(f.__name__) + '_time', f.__name__ + '计时', buckets=buckets, labelnames=['sese_id']).labels(sese_id=_id)
     t = _tqdm(bar_format='{desc}: {n:.3f}s', desc=f.__name__ + '平均用时')
     def 新f(*li, **d):
