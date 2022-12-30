@@ -49,6 +49,8 @@ sese-engine通过爬取互联网上的数据，在本地建立各个网页的索
 
 如果你想用docker部署的话，也可以参照: [xiongnemo/sese-engine-docker](https://github.com/xiongnemo/sese-engine-docker)。
 
+如果你想在树莓派上用docker部署的话，请参照：[mengguyi/sese-engine-docker](https://github.com/mengguyi/sese-engine-docker)
+
 ## 可视化
 
 默认情况下，终端上会显示一些简要指标，如果你想知道更详细的服务状态的话，可以通过赠送<sub>(?)</sub>的Grafana仪表盘查看。
