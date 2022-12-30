@@ -13,6 +13,17 @@ jobs:
         uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.8
+      - name: Fuck reppy
+        run: |
+          curl -o reppy-0.4.14.tar.gz https://files.pythonhosted.org/packages/b0/b9/8bb8a4cd95dfc6038fb721fad95da8e9558ec936688150302cbd7874c45c/reppy-0.4.14.tar.gz
+          tar -xzvf reppy-0.4.14.tar.gz
+          rm reppy-0.4.14.tar.gz
+          cd reppy-0.4.14/reppy/rep-cpp/deps/url-cpp/include
+          sed -i '1i\#include <limits>' punycode.h
+          sed -i '1i\#include <stdexcept>' punycode.h
+          cd /home/runner/work/sese-engine/sese-engine
+          tar -zcvf reppy-0.4.14.tar.gz reppy-0.4.14
+          pip install ./reppy-0.4.14.tar.gz
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: unittest
