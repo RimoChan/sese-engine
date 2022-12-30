@@ -22,8 +22,8 @@ jobs:
           sed -i '1i\#include <limits>' punycode.h
           sed -i '1i\#include <stdexcept>' punycode.h
           cd /home/runner/work/sese-engine/sese-engine
-          tar -zcvf reppy2-0.3.6.tar.gz reppy-0.4.14
-          pip install ./reppy2-0.3.6.tar.gz
+          tar -zcvf reppy-0.4.14.tar.gz reppy-0.4.14
+          pip install ./reppy-0.4.14.tar.gz
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: unittest
