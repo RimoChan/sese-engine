@@ -3,6 +3,7 @@ import sys
 import time
 import types
 import random
+from typing import Callable
 
 from tqdm import tqdm as _tqdm
 from pypinyin import pinyin, Style
@@ -56,7 +57,7 @@ def tqdm面板(l: list):
     return {x: tqdm(desc=x, ncols=70) for x in l}
 
 
-def 计时打点(f):
+def 计时打点(f: Callable) -> Callable:
     buckets = 0.01, 0.02, 0.03, 0.05, 0.07, 0.09, 0.12, 0.15, 0.18, 0.22, 0.26, 0.31, 0.37, 0.44, 0.52, 0.61, 0.71, 0.83, 0.96, 1.12, 1.30, 1.51, 1.74, 2.02, 2.33, 2.69, 3.11, 3.58, 4.13, 4.76, 5.49, 6.32, 7.28, 8.39, 9.66, 11.12, float("inf")
     h = Histogram(_翻译(f.__name__) + '_time', f.__name__ + '计时', buckets=buckets, labelnames=['sese_id', 'entry']).labels(sese_id=_id, entry=_entry)
     t = _tqdm(bar_format='{desc}: {n:.3f}s', desc=f.__name__ + '平均用时')
@@ -75,3 +76,7 @@ def 计时打点(f):
 def 直方图打点(name, buckets):
     h = Histogram(_翻译(name), name, buckets=buckets, labelnames=['sese_id', 'entry']).labels(sese_id=_id, entry=_entry)
     return h
+
+
+def 打点(name, **d):
+    return Gauge(_翻译(name), name, **d)

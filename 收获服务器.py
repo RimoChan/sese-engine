@@ -8,7 +8,7 @@ from typing import Tuple
 import flask
 import prometheus_client
 
-from 打点 import tqdm, tqdm面板, 直方图打点
+from 打点 import tqdm, tqdm面板, 直方图打点, 打点
 from 信息 import 荣
 from 类 import 阵
 from 存储 import 索引空间
@@ -23,7 +23,8 @@ app = flask.Flask(__name__)
 
 面板 = tqdm面板(['内存键数', '收到请求数', '丢弃行数', '内存行数', '小清洗次数', '大清洗索引数'])
 面板['内存行数'].total = 大清洗行数
-索引行数打点 = 直方图打点('索引行数', [2, 7, 16, 33, 63, 118, 216, 393, 711, 1284, 2316, 4172, 7514, 13530, 24358, 43848])
+索引行数打点 = 直方图打点('索引行数', [round(2**((i+1)*0.5)) for i in range(32)])
+词抽样 = 打点('词抽样', labelnames=['word', 'f'])
 索引增加行数打点 = 直方图打点('索引增加行数打点', [-1, 0, 1, 3, 7, 12, 19, 31, 48, 73, 112, 169, 256, 386, 580, 872, 1310])
 prometheus_client.start_http_server(14951)
 
@@ -96,7 +97,7 @@ def l():
         if 内存行数 > 大清洗行数:
             偏执 = 0
             大清洗()
-            os._exit(0)   # 我也想不通这就100行代码居然有内存泄漏，我也不知道漏在哪里了，先靠重启解决吧
+            os._exit(0)
     大清.release()
     return 'ok'
 
@@ -155,5 +156,18 @@ def 大清洗():
             ...
 
 
+def _抽样检查(word: str):
+    s = df.get(word, [])
+    词抽样.labels(word=word, f='长度').set(len(s))
+    词抽样.labels(word=word, f='繁荣长度').set(len([i for i in s if 荣(i[1])]))
+    zt = 小清洗(sorted(s, key=lambda x: x[0] * (1 + 荣(x[1])), reverse=True), 单键最多相同域名url)
+    小 = zt[:单键最多url][-1]
+    词抽样.labels(word=word, f='总能量').set(sum([i[0] * (1 + 荣(i[1])) for i in zt]))
+    词抽样.labels(word=word, f='最小').set(小[0])
+    词抽样.labels(word=word, f='最小能量').set(小[0] * (1 + 荣(小[1])))
+
+
 if __name__ == '__main__':
+    for word in ['我', '的', '世界', 'minecraft', 'python', 'github', 'atri', '砂砾', '冰雹', '岩浆', '光谱']:
+        _抽样检查(word)
     app.run()
