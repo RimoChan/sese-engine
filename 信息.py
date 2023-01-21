@@ -57,8 +57,8 @@ def 荣(url: str) -> Union[int, float]:
             l = 0
         if s == 0:
             if l == 0:
-                break
+                return 0
             s = l
         else:
             s = l + math.log((s-l)/2+1)
-    return s
+    return 0.1 + s
