@@ -6,13 +6,13 @@ from typing import Union
 import yaml
 
 from utils import 分解
-from 配置 import 存储位置
+from 配置 import 存储位置, 反向链接基准值
 
 
 def _归1化(d):
     q = [v for k, v in d.items() if '/' not in k]
     总能量 = sum(q)
-    倍 = 200000/总能量
+    倍 = 反向链接基准值/总能量
     return {k: v*倍 for k, v in d.items()}
 
 
