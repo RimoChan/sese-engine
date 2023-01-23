@@ -20,11 +20,11 @@ import 信息
 from 文 import 缩, 摘要
 from 存储 import 融合之门
 from 网站 import 超网站信息, 网站
-from 配置 import 爬取线程数, 爬取集中度, 单网页最多关键词, 入口, 存储位置
+from 配置 import 爬取线程数, 爬取集中度, 单网页最多关键词, 入口, 存储位置, 最大epoch, 预期繁荣网站比例
 from utils import tqdm_exception_logger, 坏, 检测语言, netloc, html结构特征
 
 
-面板 = tqdm面板(['访问url数','访问成功url数', '获取域名基本信息次数', '获取词数', '获取词数(英文)', '发送队列长度', '发送次数', '发送失败次数', '爬取线程数', '当前epoch进度'])
+面板 = tqdm面板(['访问url数', '访问成功url数', '获取域名基本信息次数', '获取词数', '获取词数(英文)', '发送队列长度', '发送次数', '发送失败次数', '爬取线程数', '当前epoch进度'])
 繁荣打点 = 直方图打点('访问url繁荣', [0, 0.1, 0.3, 0.7, 1.5, 3.1, 6.3, 12, 25, 50, 100, 200, 400, 800, 1600, float("inf")])
 url域名分布打点 = 直方图打点('url域名分布', [1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 194, 291, 437, 656, float("inf")])
 prometheus_client.start_http_server(14950)
@@ -246,7 +246,7 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
     domains = {netloc(url) for url in urls} | {缩(url) for url in urls}
     pool = ThreadPoolExecutor(max_workers=16)
     缓存信息 = {k: v for k, v in zip(domains, pool.map(超网站信息.get, domains))}
-    a = random.choices(url_list, weights=map(喜欢, url_list), k=min(40000, len(url_list)//3+200))
+    a = random.choices(url_list, weights=map(喜欢, url_list), k=min(45000, len(url_list)//3+250))
     a = {url for url, w in a}
     res = 纯化(lambda url: tldextract.extract(url).domain, a, 爬取集中度)
     res_https = [i for i in res if i.startswith('https://')]
@@ -254,6 +254,12 @@ def 重整(url_list: List[Tuple[str, float]]) -> List[str]:
     if len(res_http) > len(res_https)//4:
         res_http = random.sample(res_http, len(res_https)//4)
     res = res_http + res_https
+    res_荣 = [i for i in res if 信息.荣(i)]
+    res_不荣 = [i for i in res if not 信息.荣(i)]
+    n = int(len(res_荣) * (1-预期繁荣网站比例)/预期繁荣网站比例)
+    if len(res_不荣) > n:
+        res_不荣 = random.sample(res_不荣, max(len(res_不荣) - len(res)//10, n))
+    res = res_荣 + res_不荣
     random.shuffle(res)
     return res
 
@@ -265,7 +271,7 @@ def _计算线程数():
     return (1.2-(队.qsize() / 队列最大长度))/1.2 * 爬取线程数
 
 
-def bfs(start: str, epoch=100):
+def bfs(start: str, epoch=最大epoch):
     吸过 = set()
     q = [start]
     线程数 = _计算线程数()
