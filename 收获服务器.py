@@ -161,10 +161,11 @@ def _抽样检查(word: str):
     词抽样.labels(word=word, f='长度').set(len(s))
     词抽样.labels(word=word, f='繁荣长度').set(len([i for i in s if 荣(i[1])]))
     zt = 小清洗(sorted(s, key=lambda x: x[0] * (1 + 荣(x[1])), reverse=True), 单键最多相同域名url)
-    小 = zt[:单键最多url][-1]
-    词抽样.labels(word=word, f='总能量').set(sum([i[0] * (1 + 荣(i[1])) for i in zt]))
-    词抽样.labels(word=word, f='最小').set(小[0])
-    词抽样.labels(word=word, f='最小能量').set(小[0] * (1 + 荣(小[1])))
+    if zt:
+        小 = zt[:单键最多url][-1]
+        词抽样.labels(word=word, f='总能量').set(sum([i[0] * (1 + 荣(i[1])) for i in zt]))
+        词抽样.labels(word=word, f='最小').set(小[0])
+        词抽样.labels(word=word, f='最小能量').set(小[0] * (1 + 荣(小[1])))
 
 
 if __name__ == '__main__':
