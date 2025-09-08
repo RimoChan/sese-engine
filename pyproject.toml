@@ -1,0 +1,74 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.api"
+
+[tool.poetry]
+name = "sese-engine"
+version = "2.0.0"
+description = "Modern lightweight search engine"
+authors = ["RimoChan <rimo@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "sese_engine", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+# Core web framework
+fastapi = "^0.104.1"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+# HTTP client
+httpx = "^0.25.2"
+requests = "^2.31.0"
+# HTML parsing
+lxml = "^4.9.3"
+beautifulsoup4 = "^4.12.2"
+# Text processing
+jieba = "^0.42.1"
+pypinyin = "^0.49.0"
+# Data processing
+numpy = "^1.24.4"
+orjson = "^3.9.10"
+# Storage and compression
+brotli = "^1.1.0"
+# Task queue
+persist-queue = "^0.8.0"
+# Utilities
+tldextract = "^3.6.0"
+pyyaml = "^6.0.1"
+tqdm = "^4.66.1"
+# Monitoring
+prometheus-client = "^0.19.0"
+# Testing
+pytest = "^7.4.3"
+pytest-asyncio = "^0.21.1"
+pytest-cov = "^4.1.0"
+# Development tools
+black = "^23.11.0"
+isort = "^5.12.0"
+flake8 = "^6.1.0"
+mypy = "^1.7.1"
+
+[tool.poetry.group.dev.dependencies]
+# Additional dev dependencies if needed
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=sese_engine --cov-report=html --cov-report=term-missing"
